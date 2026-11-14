@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { analyzePendingTelegramAction } from "@/lib/actions";
 import { formatDateTime, formatPrice } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
-import { requireAdmin } from "@/lib/session";
+import { requireTelegramViewer } from "@/lib/telegram/access";
 import { dealKindLabels, dealStatusLabels, paymentLabel } from "@/lib/telegram/labels";
 import { getTelegramSales } from "@/lib/telegram/queries";
 
@@ -21,7 +21,7 @@ function paymentVariant(paidToCompany: boolean | null) {
 
 export default async function AdminTelegramSalesPage() {
   const t = await getT();
-  await requireAdmin();
+  const viewer = await requireTelegramViewer("sales");
   const data = await getTelegramSales();
   const tiles = [
     { label: t("Sales today"), value: data.today.sales },
@@ -52,23 +52,25 @@ export default async function AdminTelegramSalesPage() {
       </div>
 
       {/* ከቻናሎቹ የተገኘው ትርፍ (ከሻጭ የተገዛበትና ለገዢ የተሸጠበት ልዩነት፣ ተመላሹ ተቀንሶ)፤ ዝርዝሩ በ"ቻናሎችና ትርፍ" ገጽ። */}
-      <LocaleLink
-        href="/admin/telegram/channels"
-        className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-card/70 p-6 ring-1 ring-foreground/10 transition-colors hover:ring-primary/50"
-      >
-        <span className="flex flex-col gap-1">
-          <span className="text-sm text-muted-foreground">{t("Profit from channels (last 30 days)")}</span>
-          <span className={data.channels.profit < 0 ? "text-3xl font-semibold text-destructive" : "text-3xl font-semibold text-[#7bc862]"}>
-            {formatPrice(t, data.channels.profit)}
+      {viewer.can.profit ? (
+        <LocaleLink
+          href="/admin/telegram/channels"
+          className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-card/70 p-6 ring-1 ring-foreground/10 transition-colors hover:ring-primary/50"
+        >
+          <span className="flex flex-col gap-1">
+            <span className="text-sm text-muted-foreground">{t("Profit from channels (last 30 days)")}</span>
+            <span className={data.channels.profit < 0 ? "text-3xl font-semibold text-destructive" : "text-3xl font-semibold text-[#7bc862]"}>
+              {formatPrice(t, data.channels.profit)}
+            </span>
           </span>
-        </span>
-        <span className="text-sm text-muted-foreground">
-          {t("Money received (after refunds)")}: <span className="font-semibold text-foreground">{formatPrice(t, data.channels.revenue)}</span>
-          {" · "}
-          {t("Refunded")}: <span className="font-semibold text-foreground">{formatPrice(t, data.channels.refunded)}</span>
-        </span>
-        <span className="text-sm font-medium text-primary">{t("Channels & profit")} →</span>
-      </LocaleLink>
+          <span className="text-sm text-muted-foreground">
+            {t("Money received (after refunds)")}: <span className="font-semibold text-foreground">{formatPrice(t, data.channels.revenue)}</span>
+            {" · "}
+            {t("Refunded")}: <span className="font-semibold text-foreground">{formatPrice(t, data.channels.refunded)}</span>
+          </span>
+          <span className="text-sm font-medium text-primary">{t("Channels & profit")} →</span>
+        </LocaleLink>
+      ) : null}
 
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -78,7 +80,7 @@ export default async function AdminTelegramSalesPage() {
               {t("Found by AI from the chats ({model}). Check important sales in the chat itself.", { model: data.model })}
             </p>
           </div>
-          {data.aiEnabled && pendingCount > 0 ? (
+          {data.aiEnabled && pendingCount > 0 && viewer.isAdmin ? (
             <ActionButton action={analyzePendingTelegramAction} id="pending" variant="outline">
               {t("Analyze pending chats ({count})", { count: pendingCount })}
             </ActionButton>

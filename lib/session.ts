@@ -12,6 +12,7 @@ export type CurrentUser = {
   image: string | null;
   phone: string | null;
   suspended: boolean;
+  emailVerified: boolean;
   isAdmin: boolean;
 };
 
@@ -34,6 +35,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     image: user.image ?? null,
     phone: user.phone ?? null,
     suspended: user.suspended === true,
+    emailVerified: user.emailVerified,
     isAdmin: isAdminEmail(user.email) && user.emailVerified,
   };
 });

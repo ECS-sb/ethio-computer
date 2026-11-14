@@ -25,7 +25,8 @@ export function TelegramWorkspace({
   mode: "list" | "chat";
   initialStatsOpen: boolean;
   initialListWidth: number;
-  stats: React.ReactNode;
+  /** null፦ ቁጥሮቹን ማየት የማይችል ሰራተኛ (ማብሪያውም አይታይም) */
+  stats: React.ReactNode | null;
   folders: React.ReactNode;
   list: React.ReactNode;
   main: React.ReactNode;
@@ -48,20 +49,23 @@ export function TelegramWorkspace({
     saveLayoutPref(STATS_COOKIE, next ? "shown" : "hidden");
   };
   const statsLabel = statsOpen ? t("Hide analytics") : t("Show analytics");
+  const showStats = stats !== null && statsOpen;
   const direction = () => (document.documentElement.dir === "rtl" ? -1 : 1);
 
   return (
     <div
       className="flex min-w-0 flex-col gap-4"
-      style={{ ...telegramTheme, "--tg-offset": statsOpen ? "17rem" : "10.5rem", "--tg-list": `${listWidth}px` } as CSSProperties}
+      style={{ ...telegramTheme, "--tg-offset": showStats ? "17rem" : "10.5rem", "--tg-list": `${listWidth}px` } as CSSProperties}
     >
       <div className={cn("flex-col gap-4", mode === "chat" ? "hidden lg:flex" : "flex")}>
-        {statsOpen ? stats : null}
+        {showStats ? stats : null}
         <div className="flex min-w-0 items-center gap-2">
           <div className="min-w-0 flex-1">{folders}</div>
-          <Button type="button" variant="ghost" size="icon-sm" onClick={toggleStats} aria-label={statsLabel} title={statsLabel} aria-expanded={statsOpen}>
-            {statsOpen ? <ChevronUpIcon /> : <ChartColumnIcon />}
-          </Button>
+          {stats !== null ? (
+            <Button type="button" variant="ghost" size="icon-sm" onClick={toggleStats} aria-label={statsLabel} title={statsLabel} aria-expanded={statsOpen}>
+              {statsOpen ? <ChevronUpIcon /> : <ChartColumnIcon />}
+            </Button>
+          ) : null}
         </div>
       </div>
 

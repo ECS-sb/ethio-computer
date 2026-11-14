@@ -1,14 +1,14 @@
-import { getCurrentUser } from "@/lib/session";
+import { getTelegramViewer } from "@/lib/telegram/access";
 import { loadMedia } from "@/lib/telegram/media";
 import { canShowInline } from "@/lib/telegram/media-kind";
 
 /**
- * የቴሌግራም ፎቶ/ቪዲዮ/ድምጽ ለአድሚን ብቻ። ቦቱ ፋይሉን ራሱ ያወርዳል፤ የቦቱ token ወደ ብራውዘሩ አይደርስም።
+ * የቴሌግራም ፎቶ/ቪዲዮ/ድምጽ ለአድሚን እና ቻቶቹን ማየት ለሚችሉ ሰራተኞች ብቻ። ቦቱ ፋይሉን ራሱ ያወርዳል፤ የቦቱ token ወደ ብራውዘሩ አይደርስም።
  * ?full=1 ኦሪጅናሉን ከቴሌግራም ይጠይቃል።
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getCurrentUser();
-  if (!user?.isAdmin) return new Response(null, { status: 404 });
+  const viewer = await getTelegramViewer();
+  if (!viewer?.can.chats) return new Response(null, { status: 404 });
   const { id } = await params;
   const full = new URL(request.url).searchParams.get("full") === "1";
   const media = await loadMedia(id, full);

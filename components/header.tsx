@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { UserMenu } from "@/components/user-menu";
 import { getT } from "@/lib/i18n-server";
 import { getCurrentUser } from "@/lib/session";
+import { getTelegramViewer } from "@/lib/telegram/access";
 
 async function HeaderAuth() {
   const t = await getT();
@@ -19,7 +20,9 @@ async function HeaderAuth() {
       </LocaleLink>
     );
   }
-  return <UserMenu name={user.name} image={user.image} isAdmin={user.isAdmin} />;
+  // ቻት የሚመልሱ ሰራተኞች በምናሌው በኩል ወደ ቴሌግራም ቻቶቹ ይሄዳሉ።
+  const teamInbox = !user.isAdmin && Boolean((await getTelegramViewer())?.can.chats);
+  return <UserMenu name={user.name} image={user.image} isAdmin={user.isAdmin} teamInbox={teamInbox} />;
 }
 
 export function Header() {

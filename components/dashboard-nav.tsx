@@ -15,6 +15,7 @@ import {
   SettingsIcon,
   ShoppingBagIcon,
   StoreIcon,
+  UserCogIcon,
   UsersIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -63,12 +64,14 @@ const groups: Record<"user" | "admin", Group[]> = {
         { href: "/admin/telegram", label: "Telegram", icon: SendIcon },
         { href: "/admin/telegram/sales", label: "Telegram sales", icon: BadgeDollarSignIcon },
         { href: "/admin/telegram/channels", label: "Channels & profit", icon: ChartNoAxesCombinedIcon },
+        { href: "/admin/telegram/staff", label: "Staff", icon: UserCogIcon },
       ],
     },
   ],
 };
 
-export function DashboardNav({ area }: { area: keyof typeof groups }) {
+/** only፦ ሰራተኞች (አድሚን ያልሆኑ) የተፈቀደላቸውን የቴሌግራም ገጾች ብቻ ያያሉ፤ የቡድኑ ርዕስ አይታይም። */
+export function DashboardNav({ area, only }: { area: keyof typeof groups; only?: string[] }) {
   const t = useT();
   const pathname = stripLocale(usePathname());
   // ምናሌው ሲጠብ (በኮምፒውተር ስክሪን) አዶዎቹ ብቻ ይታያሉ፤ ስሙ በtitle እና ለስክሪን አንባቢ ይቀራል።
@@ -76,9 +79,12 @@ export function DashboardNav({ area }: { area: keyof typeof groups }) {
 
   return (
     <nav aria-label={t("Dashboard")} className="flex gap-4 overflow-x-auto [scrollbar-width:none] lg:flex-col">
-      {groups[area].map((group) => (
+      {groups[area]
+        .map((group) => (only ? { ...group, items: group.items.filter((item) => only.includes(item.href)) } : group))
+        .filter((group) => group.items.length > 0)
+        .map((group) => (
         <div key={group.title} className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-stretch">
-          <p className={cn("hidden px-4 pt-2 text-xs font-semibold text-muted-foreground", compact ? "lg:sr-only" : "lg:block")}>{t(group.title)}</p>
+          {only ? null : <p className={cn("hidden px-4 pt-2 text-xs font-semibold text-muted-foreground", compact ? "lg:sr-only" : "lg:block")}>{t(group.title)}</p>}
           {group.items.map((item) => {
             const hasSubpages = item.href === "/dashboard/messages" || item.href === "/admin/telegram" || item.href === "/admin/telegram/channels";
             // ንዑስ ገጹ የራሱ ሊንክ ካለው (ለምሳሌ /admin/telegram/sales) የወላጁ ሊንክ አይበራም።

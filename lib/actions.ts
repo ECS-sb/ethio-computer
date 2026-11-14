@@ -13,6 +13,9 @@ import { requestLocale, requireAdmin, requireUser } from "@/lib/session";
 import { aiEnabled } from "@/lib/telegram/ai";
 import { analyzeChat, analyzePending } from "@/lib/telegram/analyze";
 import * as channels from "@/lib/telegram/channel-store";
+import { getTelegramViewer } from "@/lib/telegram/access";
+import { isPermission, type Permission } from "@/lib/telegram/permissions";
+import * as staff from "@/lib/telegram/staff";
 import { sendAlertNotifications } from "@/lib/telegram/report";
 
 export type ActionResult = { ok: boolean; message: MessageKey; code?: string; id?: string };
@@ -224,9 +227,6 @@ const releaseOrderImpl = adminAction("Order completed.", market.releaseOrder);
 const cancelOrderImpl = adminAction("Order cancelled.", market.cancelOrder);
 const resolveReportImpl = adminAction("Resolved.", market.resolveReport);
 const resolveContactImpl = adminAction("Resolved.", market.resolveContactMessage);
-const resolveTelegramAlertImpl = adminAction("Resolved.", async (_actor, target) => {
-  await db.telegramAlert.update({ where: { id: target }, data: { resolved: true } });
-});
 
 export async function approveListingAction(data: FormData) {
   return approveListingImpl(data);
@@ -246,8 +246,21 @@ export async function resolveReportAction(data: FormData) {
 export async function resolveContactAction(data: FormData) {
   return resolveContactImpl(data);
 }
-export async function resolveTelegramAlertAction(data: FormData) {
-  return resolveTelegramAlertImpl(data);
+const NOT_ALLOWED: ActionResult = { ok: false, message: "You don't have permission to do this." };
+
+/** የቴሌግራም ተግባራት፦ አድሚን ወይም ፈቃዱ የተሰጠው ሰራተኛ ብቻ። */
+async function telegramAllowed(permission: Permission): Promise<boolean> {
+  const viewer = await getTelegramViewer();
+  return Boolean(viewer?.can.chats && viewer.can[permission]);
+}
+
+export async function resolveTelegramAlertAction(data: FormData): Promise<ActionResult> {
+  if (!(await telegramAllowed("alerts"))) return NOT_ALLOWED;
+  const parsed = id.safeParse(field(data, "id"));
+  if (!parsed.success) return INVALID;
+  return run("Resolved.", async () => {
+    await db.telegramAlert.update({ where: { id: parsed.data }, data: { resolved: true } });
+  });
 }
 
 const AI_NOT_SET_UP: ActionResult = { ok: false, message: "AI analysis is not set up yet." };
@@ -289,7 +302,7 @@ const channelEditSchema = z.object({
 });
 
 export async function editTelegramChannelAction(data: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  if (!(await telegramAllowed("profit"))) return NOT_ALLOWED;
   const parsed = channelEditSchema.safeParse(Object.fromEntries(data));
   if (!parsed.success) return INVALID;
   const { id: channelId, refundedEtb, ...rest } = parsed.data;
@@ -297,21 +310,21 @@ export async function editTelegramChannelAction(data: FormData): Promise<ActionR
 }
 
 export async function linkTelegramChannelsAction(data: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  if (!(await telegramAllowed("channels"))) return NOT_ALLOWED;
   const parsed = z.object({ id, other: id }).safeParse(Object.fromEntries(data));
   if (!parsed.success) return INVALID;
   return run("Channels linked.", () => channels.linkChannels(parsed.data.id, parsed.data.other));
 }
 
 export async function unlinkTelegramChannelAction(data: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  if (!(await telegramAllowed("channels"))) return NOT_ALLOWED;
   const parsed = id.safeParse(field(data, "id"));
   if (!parsed.success) return INVALID;
   return run("Saved.", () => channels.unlinkChannel(parsed.data));
 }
 
 export async function addTelegramChannelAction(data: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  if (!(await telegramAllowed("channels"))) return NOT_ALLOWED;
   const parsed = z
     .object({
       id,
@@ -332,6 +345,41 @@ export async function deleteTelegramChannelAction(data: FormData): Promise<Actio
   const parsed = id.safeParse(field(data, "id"));
   if (!parsed.success) return INVALID;
   return run("Deleted.", () => channels.deleteChannel(parsed.data));
+}
+
+// ---- የቴሌግራም ሰራተኞችና ፈቃዶቻቸው (አድሚን ብቻ)
+
+export async function addTelegramStaffAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = z
+    .object({ email: z.string().trim().toLowerCase().email().max(200), name: z.string().trim().min(1).max(80) })
+    .safeParse(Object.fromEntries(data));
+  if (!parsed.success) return INVALID;
+  return run("Staff member added.", () => staff.addStaff(parsed.data.email, parsed.data.name));
+}
+
+const onOff = z.enum(["true", "false"]).transform((value) => value === "true");
+
+export async function setTelegramStaffPermissionAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = z.object({ id, permission: z.string().refine(isPermission), enabled: onOff }).safeParse(Object.fromEntries(data));
+  if (!parsed.success || !isPermission(parsed.data.permission)) return INVALID;
+  const permission = parsed.data.permission;
+  return run("Saved.", () => staff.setStaffPermission(parsed.data.id, permission, parsed.data.enabled));
+}
+
+export async function setTelegramStaffActiveAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = z.object({ id, enabled: onOff }).safeParse(Object.fromEntries(data));
+  if (!parsed.success) return INVALID;
+  return run("Saved.", () => staff.setStaffActive(parsed.data.id, parsed.data.enabled));
+}
+
+export async function removeTelegramStaffAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = id.safeParse(field(data, "id"));
+  if (!parsed.success) return INVALID;
+  return run("Removed.", () => staff.removeStaff(parsed.data));
 }
 
 export async function rejectListingAction(data: FormData): Promise<ActionResult> {

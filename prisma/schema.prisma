@@ -402,6 +402,21 @@ model TelegramAlert {
 }
 
 /// Claude ከቻቱ ያወጣው ሽያጭ ወይም ምዝገባ። ቻቱ በተተነተነ ቁጥር የዚያ ቻት ስምምነቶች ይተካሉ።
+/// የቴሌግራም ቻቶችን የሚመልሱ ሰራተኞች፦ በGoogle የሚገቡበት ኢሜይል እና አድሚኑ የሚያበራ/የሚያጠፋቸው ፈቃዶች።
+/// permissions፦ {"chats": true, "profit": false, …}፤ ያልተጠቀሰ ፈቃድ ነባሪውን ይወስዳል (lib/telegram/permissions.ts)።
+model TelegramStaff {
+  id          String   @id @default(cuid())
+  /// ሁልጊዜ በትንሽ ፊደል
+  email       String   @unique
+  name        String
+  active      Boolean  @default(true)
+  permissions Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("telegram_staff")
+}
+
 /// ድርጅቱ ከሻጭ ወስዶ ለገዢ የሚሸጠው ቻናል ወይም አካውንት፦ ከማን በስንት እንደተገዛ፣ ለማን በስንት እንደተሸጠ፣ ተመላሽ ብር እና ትርፉ።
 /// AI ከቻቶቹ ይሞላዋል፤ ሰራተኛ በእጅ ያስተካከላቸው መስኮች (lockedFields) በAI አይቀየሩም።
 model TelegramChannel {

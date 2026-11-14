@@ -32,11 +32,11 @@ const folderIcons: Record<Folder, LucideIcon> = {
  * ከቁጥሮቹ ስር ያለው የፎልደሮች መስመር፤ ሁልጊዜ በአንድ መስመር ነው። ትንሽ ጽሑፍ ነው፤ አዶዎቹ በሰፊ ስክሪን ብቻ ይታያሉ።
  * ቦታው ካልበቃ (ለምሳሌ በስልክ) ወደ ጎን ይንሸራተታል።
  */
-export async function FolderBar({ inbox, params, basePath }: { inbox: Inbox; params: InboxParams; basePath: string }) {
+export async function FolderBar({ inbox, params, basePath, hidden = [] }: { inbox: Inbox; params: InboxParams; basePath: string; hidden?: Folder[] }) {
   const t = await getT();
   return (
     <nav aria-label={t("Folders")} className="flex min-w-0 flex-nowrap gap-1 overflow-x-auto [scrollbar-width:none]">
-      {FOLDERS.map((folder) => {
+      {FOLDERS.filter((folder) => !hidden.includes(folder)).map((folder) => {
         const Icon = folderIcons[folder];
         const active = params.folder === folder;
         return (

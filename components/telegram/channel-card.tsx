@@ -37,6 +37,7 @@ function SideBox({
   currentChatId,
   priceLabel,
   price,
+  hidePrice = false,
   paidLabel,
   paid,
   status,
@@ -48,6 +49,7 @@ function SideBox({
   currentChatId: string | null;
   priceLabel: string;
   price: number | null;
+  hidePrice?: boolean;
   paidLabel: string;
   paid: number | null;
   status: ChannelStatus | null;
@@ -70,7 +72,7 @@ function SideBox({
       ) : (
         <span className="text-muted-foreground">{t("Not linked yet")}</span>
       )}
-      <span className="text-xs text-muted-foreground">
+      <span className={cn("text-xs text-muted-foreground", hidePrice && "hidden")}>
         {priceLabel}: <span className="font-semibold text-foreground">{price === null ? "—" : formatPrice(t, price)}</span>
         {paid !== null ? (
           <>
@@ -94,12 +96,15 @@ export function ChannelCard({
   currentChatId = null,
   candidates,
   showPairLink = true,
+  showMoney = true,
 }: {
   t: T;
   channel: ChannelRow;
   currentChatId?: string | null;
   candidates?: { sellerOnly: ChannelRow[]; buyerOnly: ChannelRow[] };
   showPairLink?: boolean;
+  /** false፦ የተገዛበት ዋጋ፣ ለሻጩ የተከፈለው እና ትርፉ ይደበቃሉ፣ ማስተካከልም አይቻልም (ፈቃድ የሌለው ሰራተኛ) */
+  showMoney?: boolean;
 }) {
   const money = channelMoney(channel);
   const linked = Boolean(channel.sellerChat && channel.buyerChat);
@@ -137,9 +142,10 @@ export function ChannelCard({
           chat={channel.sellerChat}
           currentChatId={currentChatId}
           priceLabel={t("Bought for")}
-          price={channel.purchasePrice}
+          price={showMoney ? channel.purchasePrice : null}
+          hidePrice={!showMoney}
           paidLabel={t("Paid")}
-          paid={channel.paidToSellerEtb}
+          paid={showMoney ? channel.paidToSellerEtb : null}
           status={channel.sourceStatus}
         />
         <SideBox
@@ -161,7 +167,9 @@ export function ChannelCard({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        {!money.realized ? (
+        {!showMoney ? (
+          <span />
+        ) : !money.realized ? (
           <span className="text-xs text-muted-foreground">{t("Profit is counted once the buyer pays.")}</span>
         ) : money.profit === null ? (
           <span className="text-xs font-medium text-destructive">{t("Profit unknown: add the price it was bought for.")}</span>
@@ -187,19 +195,21 @@ export function ChannelCard({
               {t("Unlink")}
             </ActionButton>
           ) : null}
-          <ChannelEditDialog
-            channel={{
-              id: channel.id,
-              title: channel.title,
-              purchasePrice: channel.purchasePrice,
-              paidToSellerEtb: channel.paidToSellerEtb,
-              sourceStatus: channel.sourceStatus,
-              salePrice: channel.salePrice,
-              buyerPaidEtb: channel.buyerPaidEtb,
-              refundedEtb: channel.refundedEtb,
-              saleStatus: channel.saleStatus,
-            }}
-          />
+          {showMoney ? (
+            <ChannelEditDialog
+              channel={{
+                id: channel.id,
+                title: channel.title,
+                purchasePrice: channel.purchasePrice,
+                paidToSellerEtb: channel.paidToSellerEtb,
+                sourceStatus: channel.sourceStatus,
+                salePrice: channel.salePrice,
+                buyerPaidEtb: channel.buyerPaidEtb,
+                refundedEtb: channel.refundedEtb,
+                saleStatus: channel.saleStatus,
+              }}
+            />
+          ) : null}
         </div>
       </div>
     </li>

@@ -16,9 +16,9 @@ import { cn } from "@/lib/utils";
 type Chat = InboxData["chats"][number];
 
 /** በፎልደሩ የሚስማማ አጭር መስመር፦ ማስጠንቀቂያ፣ ስምምነት፣ ወይም የመጨረሻው መልዕክት። */
-function preview(t: T, chat: Chat, folder: Folder): { text: string; tone: "alert" | "deal" | "plain" } {
+function preview(t: T, chat: Chat, folder: Folder, showAlerts: boolean): { text: string; tone: "alert" | "deal" | "plain" } {
   const alert = chat.alerts[0];
-  if (folder === "alerts" && alert) {
+  if (showAlerts && folder === "alerts" && alert) {
     return { text: `${t(alertLabels[alert.type])}: ${evidenceText(t, alert.type, alert.evidence)}`, tone: "alert" };
   }
   const deal = chat.deals[0];
@@ -27,7 +27,8 @@ function preview(t: T, chat: Chat, folder: Folder): { text: string; tone: "alert
     return { text: parts.filter(Boolean).join(" · "), tone: "deal" };
   }
   const last = chat.messages[0];
-  if (!last) return { text: "", tone: "plain" };
+  // ማስጠንቀቂያ ማየት የማይችል ሰራተኛ የተሰረዘ መልዕክት ቅጂ አያይም።
+  if (!last || (last.deletedAt && !showAlerts)) return { text: "", tone: "plain" };
   const body = last.text || (last.mediaType ? `[${t(mediaLabels[last.mediaType] ?? "Media")}]` : "");
   const prefix = last.direction === "OUT" ? `${t("Staff")}: ` : "";
   return { text: `${last.deletedAt ? `(${t("Deleted")}) ` : ""}${prefix}${body}`, tone: "plain" };
@@ -39,12 +40,14 @@ export async function Inbox({
   basePath,
   selectedId,
   now,
+  showAlerts = true,
 }: {
   inbox: InboxData;
   params: InboxParams;
   basePath: string;
   selectedId: string | null;
   now: Date;
+  showAlerts?: boolean;
 }) {
   const t = await getT();
   const locale = await getLocale();
@@ -90,10 +93,10 @@ export async function Inbox({
       ) : (
         <ul className="min-h-0 flex-1 overflow-y-auto p-2">
           {inbox.chats.map((chat) => {
-            const line = preview(t, chat, params.folder);
+            const line = preview(t, chat, params.folder, showAlerts);
             const selected = chat.id === selectedId;
             // በማስጠንቀቂያ ፎልደር ውስጥ ሲነካ በቀጥታ ወደ ጉዳዩ መልዕክት (የተሰረዘም ቢሆን) ይሄዳል።
-            const alertMessage = params.folder === "alerts" ? chat.alerts[0]?.messageId : null;
+            const alertMessage = showAlerts && params.folder === "alerts" ? chat.alerts[0]?.messageId : null;
             const role = readProfile(chat.profile).role;
             return (
               <li key={chat.id}>
@@ -130,7 +133,7 @@ export async function Inbox({
                         {line.text}
                       </span>
                       <span className="flex shrink-0 items-center gap-1">
-                        {chat._count.alerts > 0 ? (
+                        {showAlerts && chat._count.alerts > 0 ? (
                           <span
                             title={t("{count} alerts", { count: chat._count.alerts })}
                             className="flex h-5 items-center gap-0.5 rounded-full bg-destructive/15 px-1.5 text-[11px] font-semibold text-destructive"

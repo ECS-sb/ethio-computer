@@ -14,7 +14,7 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { localePath } from "@/lib/i18n";
 
-export function UserMenu({ name, image, isAdmin }: { name: string; image: string | null; isAdmin: boolean }) {
+export function UserMenu({ name, image, isAdmin, teamInbox = false }: { name: string; image: string | null; isAdmin: boolean; teamInbox?: boolean }) {
   const router = useRouter();
   const t = useT();
   const locale = useLocale();
@@ -32,6 +32,7 @@ export function UserMenu({ name, image, isAdmin }: { name: string; image: string
         <DropdownMenuItem render={<LocaleLink href="/dashboard/seller" />}>{t("Seller dashboard")}</DropdownMenuItem>
         <DropdownMenuItem render={<LocaleLink href="/dashboard/messages" />}>{t("Messages")}</DropdownMenuItem>
         {isAdmin ? <DropdownMenuItem render={<LocaleLink href="/admin" />}>{t("Admin")}</DropdownMenuItem> : null}
+        {teamInbox ? <DropdownMenuItem render={<LocaleLink href="/admin/telegram" />}>{t("Telegram chats")}</DropdownMenuItem> : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={async () => {

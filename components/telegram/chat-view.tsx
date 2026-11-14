@@ -16,6 +16,7 @@ import { getT } from "@/lib/i18n-server";
 import { chatListTime, dayKey, dayLabel, isRecentlyActive, messageTime } from "@/lib/telegram/format";
 import { alertLabels, dealKindLabels, dealStatusLabels, evidenceText, mediaLabels, paymentLabel, roleLabels, severityLabels } from "@/lib/telegram/labels";
 import { mediaKind } from "@/lib/telegram/media-kind";
+import type { Permissions } from "@/lib/telegram/permissions";
 import { readProfile } from "@/lib/telegram/profile";
 import { summarizeDeals } from "@/lib/telegram/stats";
 import type { getTelegramChat } from "@/lib/telegram/queries";
@@ -71,7 +72,7 @@ function MessageMedia({ t, message }: { t: T; message: Message }) {
   return label ? <span className="block text-xs font-semibold">[{label}]</span> : null;
 }
 
-function MessageBubble({ t, message }: { t: T; message: Message }) {
+function MessageBubble({ t, message, showMonitoring }: { t: T; message: Message; showMonitoring: boolean }) {
   const outgoing = message.direction === "OUT";
   return (
     // id፦ ከማስጠንቀቂያ ሲመጡ (#m-…) በቀጥታ ወደዚህ መልዕክት ይሄዳል፤ :target ያደምቀዋል።
@@ -86,7 +87,7 @@ function MessageBubble({ t, message }: { t: T; message: Message }) {
         className={cn(
           "max-w-[85%] rounded-xl px-3 py-2 text-sm break-words whitespace-pre-line sm:max-w-[75%]",
           outgoing ? "bg-[var(--tg-bubble-out,var(--primary))] text-white" : "bg-secondary text-secondary-foreground",
-          message.flagged && "ring-2 ring-destructive",
+          showMonitoring && message.flagged && "ring-2 ring-destructive",
           message.deletedAt && "opacity-60"
         )}
       >
@@ -110,7 +111,7 @@ function MessageBubble({ t, message }: { t: T; message: Message }) {
           {message.receipt.isReceipt ? <Badge variant={paymentVariant(message.receipt.toCompany)}>{t(paymentLabel(message.receipt.toCompany))}</Badge> : null}
         </p>
       ) : null}
-      {message.previousText !== null ? (
+      {showMonitoring && message.previousText !== null ? (
         <p className="max-w-[85%] text-xs break-words whitespace-pre-line text-muted-foreground sm:max-w-[75%]">
           {t("Before edit:")} {message.previousText}
         </p>
@@ -119,21 +120,25 @@ function MessageBubble({ t, message }: { t: T; message: Message }) {
   );
 }
 
-export async function ChatView({ chat, backHref, now }: { chat: ChatData; backHref: string; now: Date }) {
+/** viewer.can፦ ሰራተኛው የሚያየው (lib/telegram/permissions.ts)፤ አድሚን ሁሉንም ያያል። */
+export async function ChatView({ chat, backHref, now, viewer }: { chat: ChatData; backHref: string; now: Date; viewer: { isAdmin: boolean; can: Permissions } }) {
   const t = await getT();
-  const openAlerts = chat.alerts.filter((alert) => !alert.resolved);
+  const { can } = viewer;
+  const openAlerts = can.alerts ? chat.alerts.filter((alert) => !alert.resolved) : [];
   const loadedIds = new Set(chat.messages.map((message) => message.id));
   const activeNow = isRecentlyActive(chat.lastInboundAt, now);
   const deals = summarizeDeals(chat.deals);
   const profile = readProfile(chat.profile);
-  const channels = [...chat.channelsSold, ...chat.channelsBought].sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
+  const channels = can.channels ? [...chat.channelsSold, ...chat.channelsBought].sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime()) : [];
   // ሻጭ ወይም ገዢ ያልተገናኘለት ቻናል ካለ፣ በእጅ ለማገናኘት የሚመረጡት ይመጣሉ።
   const candidates = channels.some((channel) => !channel.sellerChat || !channel.buyerChat) ? await getLinkCandidates(chat.id) : undefined;
 
   // ቀን በቀን፦ የቀን መለያ፣ ከዚያ የዚያ ቀን መልዕክቶች።
   const items: ({ kind: "day"; key: string; date: Date } | { kind: "message"; message: Message })[] = [];
   let currentDay = "";
+  // ማስጠንቀቂያ ማየት የማይችል ሰራተኛ የተሰረዙ መልዕክቶችን ቅጂ አያይም።
   for (const message of chat.messages) {
+    if (message.deletedAt && !can.alerts) continue;
     const key = dayKey(message.sentAt);
     if (key !== currentDay) {
       items.push({ kind: "day", key, date: message.sentAt });
@@ -159,18 +164,20 @@ export async function ChatView({ chat, backHref, now }: { chat: ChatData; backHr
               <div className="flex min-w-0 items-center gap-1.5">
                 <h1 className="truncate text-sm leading-5 font-semibold">{chat.name}</h1>
                 {profile.role ? <RoleBadge role={profile.role} label={t(roleLabels[profile.role])} /> : null}
-                <ProfileDialog
-                  name={chat.name}
-                  username={chat.username}
-                  telegramId={chat.chatId}
-                  profile={profile}
-                  stats={{
-                    firstSeen: formatDateTime(chat.createdAt),
-                    messages: chat._count.messages,
-                    deals: chat.deals.length,
-                    paid: deals.paidEtb > 0 ? formatPrice(t, deals.paidEtb) : null,
-                  }}
-                />
+                {can.customerDetails ? (
+                  <ProfileDialog
+                    name={chat.name}
+                    username={chat.username}
+                    telegramId={chat.chatId}
+                    profile={profile}
+                    stats={{
+                      firstSeen: formatDateTime(chat.createdAt),
+                      messages: chat._count.messages,
+                      deals: chat.deals.length,
+                      paid: deals.paidEtb > 0 ? formatPrice(t, deals.paidEtb) : null,
+                    }}
+                  />
+                ) : null}
               </div>
               <span className="truncate text-[11px] leading-4 text-muted-foreground">
                 {activeNow ? (
@@ -199,7 +206,7 @@ export async function ChatView({ chat, backHref, now }: { chat: ChatData; backHr
           ) : null
         }
         panel={
-          chat.aiEnabled || chat.aiSummary || openAlerts.length > 0 || channels.length > 0 ? (
+          (can.aiSummary && (chat.aiEnabled || chat.aiSummary)) || openAlerts.length > 0 || can.channels ? (
             <>
               {openAlerts.map((alert) => (
                 <div key={alert.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-destructive/10 p-3">
@@ -226,21 +233,23 @@ export async function ChatView({ chat, backHref, now }: { chat: ChatData; backHr
                   </div>
                 </div>
               ))}
-              <section aria-label={t("Channels")} className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-xs font-semibold text-muted-foreground">{t("Channels")}</h2>
-                  <ChannelAddDialog chatId={chat.id} />
-                </div>
-                {channels.length > 0 ? (
-                  <ul className="flex flex-col gap-2">
-                    {channels.map((channel) => (
-                      <ChannelCard key={channel.id} t={t} channel={channel} currentChatId={chat.id} candidates={candidates} />
-                    ))}
-                  </ul>
-                ) : null}
-              </section>
-              {chat.aiSummary ? <p className="break-words whitespace-pre-line">{chat.aiSummary}</p> : null}
-              {chat.deals.length > 0 ? (
+              {can.channels ? (
+                <section aria-label={t("Channels")} className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-xs font-semibold text-muted-foreground">{t("Channels")}</h2>
+                    <ChannelAddDialog chatId={chat.id} />
+                  </div>
+                  {channels.length > 0 ? (
+                    <ul className="flex flex-col gap-2">
+                      {channels.map((channel) => (
+                        <ChannelCard key={channel.id} t={t} channel={channel} currentChatId={chat.id} candidates={candidates} showMoney={can.profit} />
+                      ))}
+                    </ul>
+                  ) : null}
+                </section>
+              ) : null}
+              {can.aiSummary && chat.aiSummary ? <p className="break-words whitespace-pre-line">{chat.aiSummary}</p> : null}
+              {can.aiSummary && chat.deals.length > 0 ? (
                 <ul className="flex flex-col gap-2">
                   {chat.deals.map((deal) => (
                     <li key={deal.id} className="flex flex-wrap items-center gap-2">
@@ -262,7 +271,7 @@ export async function ChatView({ chat, backHref, now }: { chat: ChatData; backHr
                 ) : (
                   <span />
                 )}
-                {chat.aiEnabled ? (
+                {chat.aiEnabled && viewer.isAdmin ? (
                   <ActionButton action={analyzeTelegramChatAction} id={chat.id} variant="outline" size="sm">
                     {t("Analyze this chat")}
                   </ActionButton>
@@ -285,7 +294,7 @@ export async function ChatView({ chat, backHref, now }: { chat: ChatData; backHr
                 {dayLabel(item.date)}
               </p>
             ) : (
-              <MessageBubble key={item.message.id} t={t} message={item.message} />
+              <MessageBubble key={item.message.id} t={t} message={item.message} showMonitoring={can.alerts} />
             )
           )}
           {chat.messages.length === 0 ? <p className="m-auto text-sm text-muted-foreground">{t("No messages saved for this chat yet.")}</p> : null}

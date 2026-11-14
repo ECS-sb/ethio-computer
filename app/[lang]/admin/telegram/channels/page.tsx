@@ -3,7 +3,7 @@ import { ChannelCard } from "@/components/telegram/channel-card";
 import { PeriodPicker } from "@/components/telegram/period-picker";
 import { formatPrice } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
-import { requireAdmin } from "@/lib/session";
+import { requireTelegramViewer } from "@/lib/telegram/access";
 import { channelMoney, summarizeChannels } from "@/lib/telegram/channels";
 import { readLayoutPrefs } from "@/lib/telegram/layout-prefs";
 import { periodStart } from "@/lib/telegram/periods";
@@ -18,7 +18,7 @@ export const generateMetadata = pageTitle("Channels & profit");
  */
 export default async function AdminTelegramChannelsPage() {
   const t = await getT();
-  await requireAdmin();
+  await requireTelegramViewer("profit");
   const store = await cookies();
   const { period } = readLayoutPrefs((name) => store.get(name)?.value);
   const since = periodStart(period);
