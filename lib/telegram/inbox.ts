@@ -7,10 +7,16 @@ import { replyStats, startOfTodayInAddis } from "@/lib/telegram/stats";
 
 export const INBOX_LIMIT = 100;
 
+/** "ምላሽ የሚጠብቁ" የሚባሉት ባለፉት 7 ቀናት የጻፉ ደንበኞች ብቻ ናቸው። */
+export function waitingSince(): Date {
+  return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+}
+
 function folderWhere(folder: Folder): Prisma.TelegramChatWhereInput {
   switch (folder) {
     case "waiting":
-      return { lastDirection: "IN" };
+      // የቆዩ (ከexport የመጡ) ያልተመለሱ ቻቶች ፎልደሩን እንዳይሞሉት ባለፉት 7 ቀናት የጻፉ ብቻ።
+      return { lastDirection: "IN", lastInboundAt: { gte: waitingSince() } };
     case "alerts":
       return { alerts: { some: { resolved: false } } };
     case "progress":

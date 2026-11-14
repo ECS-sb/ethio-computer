@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { createT, localePath, type Locale, type T } from "@/lib/i18n";
 import { escapeHtml, notifyOwners, ownerChatIds, sendMessage } from "@/lib/telegram/api";
+import { waitingSince } from "@/lib/telegram/inbox";
 import type { NewAlert } from "@/lib/telegram/ingest";
 import { alertLabels, evidenceText } from "@/lib/telegram/labels";
 import { replyStats, summarizeDeals } from "@/lib/telegram/stats";
@@ -31,7 +32,7 @@ export async function buildDailyReport(t: T, locale: Locale, now = new Date()): 
       select: { chatId: true, direction: true, sentAt: true, chat: { select: { connectionId: true } } },
     }),
     db.telegramChat.groupBy({ by: ["connectionId"], where: { createdAt: { gte: since } }, _count: { _all: true } }),
-    db.telegramChat.groupBy({ by: ["connectionId"], where: { lastDirection: "IN" }, _count: { _all: true } }),
+    db.telegramChat.groupBy({ by: ["connectionId"], where: { lastDirection: "IN", lastInboundAt: { gte: waitingSince() } }, _count: { _all: true } }),
     db.telegramAlert.findMany({
       where: { createdAt: { gte: since } },
       orderBy: [{ severity: "desc" }, { createdAt: "desc" }],
