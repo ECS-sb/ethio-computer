@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import {
   BadgeDollarSignIcon,
+  ChartNoAxesCombinedIcon,
   FlagIcon,
   HandCoinsIcon,
   LayoutDashboardIcon,
@@ -61,6 +62,7 @@ const groups: Record<"user" | "admin", Group[]> = {
         { href: "/admin/reports", label: "Reports", icon: FlagIcon },
         { href: "/admin/telegram", label: "Telegram", icon: SendIcon },
         { href: "/admin/telegram/sales", label: "Telegram sales", icon: BadgeDollarSignIcon },
+        { href: "/admin/telegram/channels", label: "Channels & profit", icon: ChartNoAxesCombinedIcon },
       ],
     },
   ],
@@ -78,7 +80,7 @@ export function DashboardNav({ area }: { area: keyof typeof groups }) {
         <div key={group.title} className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-stretch">
           <p className={cn("hidden px-4 pt-2 text-xs font-semibold text-muted-foreground", compact ? "lg:sr-only" : "lg:block")}>{t(group.title)}</p>
           {group.items.map((item) => {
-            const hasSubpages = item.href === "/dashboard/messages" || item.href === "/admin/telegram";
+            const hasSubpages = item.href === "/dashboard/messages" || item.href === "/admin/telegram" || item.href === "/admin/telegram/channels";
             // ንዑስ ገጹ የራሱ ሊንክ ካለው (ለምሳሌ /admin/telegram/sales) የወላጁ ሊንክ አይበራም።
             const ownedByChild = group.items.some(
               (other) => other.href.startsWith(`${item.href}/`) && (pathname === other.href || pathname.startsWith(`${other.href}/`))

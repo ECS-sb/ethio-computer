@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { db } from "@/lib/db";
 import { aiEnabled, analyzeTranscript, readReceipt } from "@/lib/telegram/ai";
 import { downloadTelegramFile } from "@/lib/telegram/api";
+import { syncChatChannels } from "@/lib/telegram/channel-store";
 import { decideToCompany, describeCompany, loadCompanyProfile } from "@/lib/telegram/company";
 import { normalizePhone, type Finding } from "@/lib/telegram/detect";
 import { canHoldReceipt, recordAlerts, type NewAlert } from "@/lib/telegram/ingest";
@@ -208,6 +209,9 @@ export async function analyzeChat(chatRowId: string): Promise<boolean> {
       data: { aiSummary: result.summary.slice(0, 1000), analyzedAt: startedAt, profile, tags },
     }),
   ]);
+
+  // የሚሸጡ ቻናሎች (ከሻጩ የተገዛበትና ለገዢው የተሸጠበት ዋጋ፣ ትርፍ)።
+  await syncChatChannels(chat.id, result.channels, messages);
 
   const suspicion = result.side_deal_suspicion;
   if (suspicion.suspected) {

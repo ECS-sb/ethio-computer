@@ -12,6 +12,7 @@ import type { MessageKey } from "@/lib/messages";
 import { requestLocale, requireAdmin, requireUser } from "@/lib/session";
 import { aiEnabled } from "@/lib/telegram/ai";
 import { analyzeChat, analyzePending } from "@/lib/telegram/analyze";
+import * as channels from "@/lib/telegram/channel-store";
 import { sendAlertNotifications } from "@/lib/telegram/report";
 
 export type ActionResult = { ok: boolean; message: MessageKey; code?: string; id?: string };
@@ -268,6 +269,69 @@ export async function analyzePendingTelegramAction(): Promise<ActionResult> {
     const result = await analyzePending({ receipts: 10, chats: 8 });
     if (result.alerts.length > 0) await sendAlertNotifications(result.alerts);
   });
+}
+
+// ---- የቴሌግራም ቻናሎች (ከሻጭ የተገዛ፣ ለገዢ የተሸጠ፣ ትርፍ)
+
+const channelStatus = z.preprocess((value) => (value === "" || value === undefined ? null : value), z.enum(["NEGOTIATING", "AGREED", "PAID", "DELIVERED", "REFUNDED", "CANCELLED"]).nullable());
+const birr = z.preprocess((value) => (value === "" || value === null || value === undefined ? null : value), z.coerce.number().int().min(0).max(1_000_000_000).nullable());
+
+const channelEditSchema = z.object({
+  id,
+  title: z.string().trim().min(1).max(200),
+  purchasePrice: birr,
+  paidToSellerEtb: birr,
+  sourceStatus: channelStatus,
+  salePrice: birr,
+  buyerPaidEtb: birr,
+  refundedEtb: birr,
+  saleStatus: channelStatus,
+});
+
+export async function editTelegramChannelAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = channelEditSchema.safeParse(Object.fromEntries(data));
+  if (!parsed.success) return INVALID;
+  const { id: channelId, refundedEtb, ...rest } = parsed.data;
+  return run("Saved.", () => channels.editChannel(channelId, { ...rest, refundedEtb: refundedEtb ?? 0 }));
+}
+
+export async function linkTelegramChannelsAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = z.object({ id, other: id }).safeParse(Object.fromEntries(data));
+  if (!parsed.success) return INVALID;
+  return run("Channels linked.", () => channels.linkChannels(parsed.data.id, parsed.data.other));
+}
+
+export async function unlinkTelegramChannelAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = id.safeParse(field(data, "id"));
+  if (!parsed.success) return INVALID;
+  return run("Saved.", () => channels.unlinkChannel(parsed.data));
+}
+
+export async function addTelegramChannelAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = z
+    .object({
+      id,
+      side: z.enum(["seller", "buyer"]),
+      platform: z.string().trim().min(1).max(40),
+      title: z.string().trim().max(200).default(""),
+      link: z.string().trim().max(300).default(""),
+      price: birr,
+    })
+    .safeParse(Object.fromEntries(data));
+  if (!parsed.success) return INVALID;
+  const { id: chatId, side, ...input } = parsed.data;
+  return run("Channel added.", () => channels.addChannel(chatId, side, input));
+}
+
+export async function deleteTelegramChannelAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = id.safeParse(field(data, "id"));
+  if (!parsed.success) return INVALID;
+  return run("Deleted.", () => channels.deleteChannel(parsed.data));
 }
 
 export async function rejectListingAction(data: FormData): Promise<ActionResult> {

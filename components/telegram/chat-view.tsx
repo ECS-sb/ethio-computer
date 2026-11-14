@@ -2,6 +2,8 @@ import Image from "next/image";
 import { ArrowLeftIcon, ExternalLinkIcon, FileIcon } from "lucide-react";
 import { ActionButton } from "@/components/action-form";
 import { LocaleLink } from "@/components/i18n-provider";
+import { ChannelCard } from "@/components/telegram/channel-card";
+import { ChannelAddDialog } from "@/components/telegram/channel-dialogs";
 import { ChatAvatar } from "@/components/telegram/chat-avatar";
 import { ChatInsights } from "@/components/telegram/chat-insights";
 import { ProfileDialog } from "@/components/telegram/profile-dialog";
@@ -17,7 +19,7 @@ import { mediaKind } from "@/lib/telegram/media-kind";
 import { readProfile } from "@/lib/telegram/profile";
 import { summarizeDeals } from "@/lib/telegram/stats";
 import type { getTelegramChat } from "@/lib/telegram/queries";
-import { TELEGRAM_CHAT_PAGE } from "@/lib/telegram/queries";
+import { getLinkCandidates, TELEGRAM_CHAT_PAGE } from "@/lib/telegram/queries";
 import { cn } from "@/lib/utils";
 
 type ChatData = NonNullable<Awaited<ReturnType<typeof getTelegramChat>>>;
@@ -124,6 +126,9 @@ export async function ChatView({ chat, backHref, now }: { chat: ChatData; backHr
   const activeNow = isRecentlyActive(chat.lastInboundAt, now);
   const deals = summarizeDeals(chat.deals);
   const profile = readProfile(chat.profile);
+  const channels = [...chat.channelsSold, ...chat.channelsBought].sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
+  // ሻጭ ወይም ገዢ ያልተገናኘለት ቻናል ካለ፣ በእጅ ለማገናኘት የሚመረጡት ይመጣሉ።
+  const candidates = channels.some((channel) => !channel.sellerChat || !channel.buyerChat) ? await getLinkCandidates(chat.id) : undefined;
 
   // ቀን በቀን፦ የቀን መለያ፣ ከዚያ የዚያ ቀን መልዕክቶች።
   const items: ({ kind: "day"; key: string; date: Date } | { kind: "message"; message: Message })[] = [];
@@ -194,7 +199,7 @@ export async function ChatView({ chat, backHref, now }: { chat: ChatData; backHr
           ) : null
         }
         panel={
-          chat.aiEnabled || chat.aiSummary || openAlerts.length > 0 ? (
+          chat.aiEnabled || chat.aiSummary || openAlerts.length > 0 || channels.length > 0 ? (
             <>
               {openAlerts.map((alert) => (
                 <div key={alert.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-destructive/10 p-3">
@@ -221,6 +226,19 @@ export async function ChatView({ chat, backHref, now }: { chat: ChatData; backHr
                   </div>
                 </div>
               ))}
+              <section aria-label={t("Channels")} className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-xs font-semibold text-muted-foreground">{t("Channels")}</h2>
+                  <ChannelAddDialog chatId={chat.id} />
+                </div>
+                {channels.length > 0 ? (
+                  <ul className="flex flex-col gap-2">
+                    {channels.map((channel) => (
+                      <ChannelCard key={channel.id} t={t} channel={channel} currentChatId={chat.id} candidates={candidates} />
+                    ))}
+                  </ul>
+                ) : null}
+              </section>
               {chat.aiSummary ? <p className="break-words whitespace-pre-line">{chat.aiSummary}</p> : null}
               {chat.deals.length > 0 ? (
                 <ul className="flex flex-col gap-2">

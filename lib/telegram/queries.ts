@@ -1,7 +1,9 @@
 import "server-only";
 import { db } from "@/lib/db";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import { aiEnabled, AI_MODEL } from "@/lib/telegram/ai";
 import { countPending } from "@/lib/telegram/analyze";
+import { summarizeChannels } from "@/lib/telegram/channels";
 import { startOfTodayInAddis, summarizeDeals } from "@/lib/telegram/stats";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -10,9 +12,10 @@ export async function getTelegramSales() {
   const now = Date.now();
   const today = startOfTodayInAddis();
   const weekAgo = new Date(now - 7 * DAY);
-  const [deals, pending] = await Promise.all([
+  const monthAgo = new Date(now - 30 * DAY);
+  const [deals, pending, soldChannels] = await Promise.all([
     db.telegramDeal.findMany({
-      where: { dealAt: { gte: new Date(now - 30 * DAY) } },
+      where: { dealAt: { gte: monthAgo } },
       orderBy: { dealAt: "desc" },
       take: 300,
       select: {
@@ -30,9 +33,14 @@ export async function getTelegramSales() {
       },
     }),
     countPending(),
+    db.telegramChannel.findMany({
+      where: { soldAt: { gte: monthAgo } },
+      select: { purchasePrice: true, paidToSellerEtb: true, salePrice: true, buyerPaidEtb: true, refundedEtb: true, saleStatus: true },
+    }),
   ]);
   return {
     deals,
+    channels: summarizeChannels(soldChannels),
     today: summarizeDeals(deals.filter((deal) => deal.dealAt >= today)),
     week: summarizeDeals(deals.filter((deal) => deal.dealAt >= weekAgo)),
     pending,
@@ -42,6 +50,61 @@ export async function getTelegramSales() {
 }
 
 export const TELEGRAM_CHAT_PAGE = 300;
+
+/** የአንድ ቻናል መዝገብ ከሻጩና ከገዢው ቻት ስሞች ጋር (በቻቱ ገጽ፣ በቻናሎች ዝርዝር እና በቻናሉ ገጽ)። */
+export const channelSelect = {
+  id: true,
+  platform: true,
+  title: true,
+  link: true,
+  purchasePrice: true,
+  paidToSellerEtb: true,
+  sourceStatus: true,
+  salePrice: true,
+  buyerPaidEtb: true,
+  refundedEtb: true,
+  saleStatus: true,
+  soldAt: true,
+  lastActivityAt: true,
+  lockedFields: true,
+  sellerChat: { select: { id: true, name: true } },
+  buyerChat: { select: { id: true, name: true } },
+} satisfies Prisma.TelegramChannelSelect;
+
+export type ChannelRow = Prisma.TelegramChannelGetPayload<{ select: typeof channelSelect }>;
+
+/** በእጅ ለማገናኘት፦ ገዢ የሌላቸው የሻጭ ቻናሎች እና ሻጭ የሌላቸው የገዢ ቻናሎች (ከዚህ ቻት ውጭ)። */
+export async function getLinkCandidates(chatId: string) {
+  const [sellerOnly, buyerOnly] = await Promise.all([
+    db.telegramChannel.findMany({
+      where: { buyerChatId: null, sellerChatId: { not: null }, NOT: { sellerChatId: chatId } },
+      orderBy: { lastActivityAt: "desc" },
+      take: 60,
+      select: channelSelect,
+    }),
+    db.telegramChannel.findMany({
+      where: { sellerChatId: null, buyerChatId: { not: null }, NOT: { buyerChatId: chatId } },
+      orderBy: { lastActivityAt: "desc" },
+      take: 60,
+      select: channelSelect,
+    }),
+  ]);
+  return { sellerOnly, buyerOnly };
+}
+
+export async function getTelegramChannel(id: string) {
+  return db.telegramChannel.findUnique({ where: { id }, select: channelSelect });
+}
+
+/** የቻናሎች ዝርዝር፦ በተመረጠው ጊዜ ውስጥ የተሸጡ (ትርፉ የሚቆጠርባቸው) እና በዚያ ጊዜ እንቅስቃሴ የነበራቸው። */
+export async function getTelegramChannels(since: Date) {
+  return db.telegramChannel.findMany({
+    where: { OR: [{ soldAt: { gte: since } }, { lastActivityAt: { gte: since } }] },
+    orderBy: [{ lastActivityAt: "desc" }],
+    take: 500,
+    select: channelSelect,
+  });
+}
 
 export async function getTelegramChat(id: string) {
   const chat = await db.telegramChat.findUnique({
@@ -63,6 +126,8 @@ export async function getTelegramChat(id: string) {
         orderBy: { dealAt: "desc" },
         select: { id: true, kind: true, item: true, amountEtb: true, status: true, paidToCompany: true, note: true, dealAt: true },
       },
+      channelsSold: { orderBy: { lastActivityAt: "desc" }, select: channelSelect },
+      channelsBought: { orderBy: { lastActivityAt: "desc" }, select: channelSelect },
       alerts: {
         orderBy: [{ resolved: "asc" }, { createdAt: "desc" }],
         select: { id: true, type: true, severity: true, evidence: true, resolved: true, createdAt: true, messageId: true },

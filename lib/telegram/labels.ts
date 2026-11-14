@@ -1,4 +1,5 @@
 import type { MessageKey } from "@/lib/messages";
+import type { ChannelStatus } from "@/lib/telegram/channels";
 import type { AlertSeverity, AlertType } from "@/lib/telegram/detect";
 import type { PersonRole } from "@/lib/telegram/profile";
 import type { DealLike } from "@/lib/telegram/stats";
@@ -19,6 +20,15 @@ export const roleLabels: Record<PersonRole, MessageKey> = {
   BUYER: "Buyer",
   SELLER: "Seller",
   STUDENT: "Student",
+};
+
+export const channelStatusLabels: Record<ChannelStatus, MessageKey> = {
+  NEGOTIATING: "Negotiating",
+  AGREED: "Agreed",
+  PAID: "Paid",
+  DELIVERED: "Delivered",
+  REFUNDED: "Refunded",
+  CANCELLED: "Cancelled",
 };
 
 export const dealKindLabels: Record<DealLike["kind"], MessageKey> = {

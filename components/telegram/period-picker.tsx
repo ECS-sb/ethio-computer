@@ -10,7 +10,7 @@ import { parsePeriod, PERIOD_COOKIE, periodLabel, PERIODS, type PeriodId } from 
 import { telegramTheme } from "@/lib/telegram/theme";
 
 /** ቁጥሮቹ የሚቆጠሩበትን ጊዜ የሚቀይር አንድ አዝራር (1 ሰዓት … 6 ወር)። ምርጫው በcookie ይታወሳል፣ ቁጥሮቹ ከሰርቨር ይታደሳሉ። */
-export function PeriodPicker({ initialPeriod }: { initialPeriod: PeriodId }) {
+export function PeriodPicker({ initialPeriod, telegramColors = true }: { initialPeriod: PeriodId; telegramColors?: boolean }) {
   const t = useT();
   const router = useRouter();
   const [period, setPeriod] = useState(initialPeriod);
@@ -37,7 +37,7 @@ export function PeriodPicker({ initialPeriod }: { initialPeriod: PeriodId }) {
         <span className="text-xs text-muted-foreground">{t("Time period")}</span>
       </DropdownMenuTrigger>
       {/* ሜኑው ከገጹ ውጭ (portal) ስለሚከፈት የቴሌግራም ቀለሞችን ራሱ ይወስዳል። */}
-      <DropdownMenuContent align="start" className="w-44" style={telegramTheme}>
+      <DropdownMenuContent align="start" className="w-44" style={telegramColors ? telegramTheme : undefined}>
         <DropdownMenuRadioGroup value={period} onValueChange={choose}>
           {PERIODS.map((option) => (
             <DropdownMenuRadioItem key={option.id} value={option.id} closeOnClick className="py-1.5">

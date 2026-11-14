@@ -65,6 +65,19 @@ export const ChatAnalysisSchema = z.object({
     notes: z.string(),
   }),
   topics: z.array(z.enum(["TIKTOK_WITHDRAWAL", "PAYPAL_EXCHANGE"])),
+  channels: z.array(
+    z.object({
+      side: z.enum(["BUYER_BUYS_FROM_US", "SELLER_SELLS_TO_US"]),
+      platform: z.string(),
+      link_or_handle: z.string(),
+      description: z.string(),
+      agreed_price_etb: z.number().int().nullable(),
+      paid_etb: z.number().int().nullable(),
+      refunded_etb: z.number().int().nullable(),
+      status: z.enum(["NEGOTIATING", "AGREED", "PAID", "DELIVERED", "REFUNDED", "CANCELLED"]),
+      evidence_message_numbers: z.array(z.number().int()),
+    })
+  ),
 });
 export type ChatAnalysis = z.infer<typeof ChatAnalysisSchema>;
 
@@ -100,7 +113,17 @@ Wording for every Amharic text you write (summary, notes, reasons): call the per
    - other_accounts: other accounts or links of the person that are not for sale.
    - Never copy passwords, verification or login codes, PINs or recovery codes, even when the person sends them.
    - notes: one short line in Amharic with other useful facts about the person (for example city, what they need, their budget), or "".
-5. topics: TIKTOK_WITHDRAWAL when the person asks the company to withdraw or cash out money or rewards from TikTok (or another platform) for them; PAYPAL_EXCHANGE when they want PayPal, Payoneer, dollar or other foreign balances exchanged to birr (or the reverse). An empty list when neither applies.`;
+5. topics: TIKTOK_WITHDRAWAL when the person asks the company to withdraw or cash out money or rewards from TikTok (or another platform) for them; PAYPAL_EXCHANGE when they want PayPal, Payoneer, dollar or other foreign balances exchanged to birr (or the reverse). An empty list when neither applies.
+6. channels: the company usually buys a channel or account from a seller and resells it to a buyer, keeping the difference as profit. List every specific account or channel being bought or sold in this chat (an empty list when there is none).
+   - side: BUYER_BUYS_FROM_US when this person buys it from the company; SELLER_SELLS_TO_US when this person sells it to the company.
+   - platform: YouTube, TikTok, Instagram, Telegram, Facebook, X, AdSense or other.
+   - link_or_handle: the account's link or @username exactly as written by anyone in the chat (staff often send the buyer the link), or "" if none is written. Never a password, email or code.
+   - description: short, for example "TikTok, 10K followers, comedy".
+   - agreed_price_etb: the price this person and the company agreed (what a buyer pays the company, or what the company pays a seller), as an integer; null when no price was accepted yet.
+   - paid_etb: money that actually moved for it (the buyer paid the company, or the company paid the seller), shown by a receipt or a clear message; else null.
+   - refunded_etb: money returned because the deal did not go through or was reduced (the company back to the buyer, or the seller back to the company); else null.
+   - status: NEGOTIATING, AGREED, PAID, DELIVERED (the account was handed over), REFUNDED (money returned and the deal undone) or CANCELLED.
+   - evidence_message_numbers: the messages that show the price, payment or current status.`;
 
 function request(task: string, company: string) {
   return {

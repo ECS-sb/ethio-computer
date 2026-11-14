@@ -287,6 +287,16 @@ enum TelegramDealStatus {
   CANCELLED
 }
 
+/// በድርጅቱ በኩል የሚሸጥ ቻናል ሁኔታ (ከሻጩም ከገዢውም ወገን)። REFUNDED፦ ብሩ ተመልሶ ሽያጩ ቀርቷል።
+enum TelegramChannelStatus {
+  NEGOTIATING
+  AGREED
+  PAID
+  DELIVERED
+  REFUNDED
+  CANCELLED
+}
+
 enum TelegramAlertSeverity {
   LOW
   MEDIUM
@@ -336,6 +346,9 @@ model TelegramChat {
   messages TelegramMessage[]
   alerts   TelegramAlert[]
   deals    TelegramDeal[]
+  /// ይህ ሰው ለድርጅቱ የሸጣቸው (ሻጭ) እና ከድርጅቱ የገዛቸው (ገዢ) ቻናሎች
+  channelsSold   TelegramChannel[] @relation("ChannelSeller")
+  channelsBought TelegramChannel[] @relation("ChannelBuyer")
 
   @@unique([connectionId, chatId])
   @@index([lastMessageAt])
@@ -389,6 +402,41 @@ model TelegramAlert {
 }
 
 /// Claude ከቻቱ ያወጣው ሽያጭ ወይም ምዝገባ። ቻቱ በተተነተነ ቁጥር የዚያ ቻት ስምምነቶች ይተካሉ።
+/// ድርጅቱ ከሻጭ ወስዶ ለገዢ የሚሸጠው ቻናል ወይም አካውንት፦ ከማን በስንት እንደተገዛ፣ ለማን በስንት እንደተሸጠ፣ ተመላሽ ብር እና ትርፉ።
+/// AI ከቻቶቹ ይሞላዋል፤ ሰራተኛ በእጅ ያስተካከላቸው መስኮች (lockedFields) በAI አይቀየሩም።
+model TelegramChannel {
+  id              String                 @id @default(cuid())
+  platform        String
+  /// የቻናሉ ሊንክ ወይም @username በአንድ ቅርጽ (ለምሳሌ "tiktok:@abebe")፤ የሻጩንና የገዢውን ቻት የሚያገናኘው ይህ ነው።
+  key             String?                @unique
+  link            String?
+  title           String
+  sellerChatId    String?
+  sellerChat      TelegramChat?          @relation("ChannelSeller", fields: [sellerChatId], references: [id], onDelete: SetNull)
+  /// ከሻጩ ጋር የተስማማንበት ዋጋ እና በእርግጥ የተከፈለው
+  purchasePrice   Int?
+  paidToSellerEtb Int?
+  sourceStatus    TelegramChannelStatus?
+  buyerChatId     String?
+  buyerChat       TelegramChat?          @relation("ChannelBuyer", fields: [buyerChatId], references: [id], onDelete: SetNull)
+  /// ከገዢው ጋር የተስማማንበት ዋጋ፣ የከፈለው እና የተመለሰለት ብር
+  salePrice       Int?
+  buyerPaidEtb    Int?
+  refundedEtb     Int                    @default(0)
+  saleStatus      TelegramChannelStatus?
+  /// ገዢው የከፈለበት (ሽያጩ የተቆጠረበት) ጊዜ
+  soldAt          DateTime?
+  lockedFields    String[]               @default([])
+  lastActivityAt  DateTime
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  @@index([sellerChatId])
+  @@index([buyerChatId])
+  @@index([soldAt])
+  @@map("telegram_channel")
+}
+
 model TelegramDeal {
   id            String             @id @default(cuid())
   chatId        String
