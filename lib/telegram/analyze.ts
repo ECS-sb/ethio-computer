@@ -152,6 +152,31 @@ export async function analyzeChat(chatRowId: string): Promise<boolean> {
     };
   });
 
+  // መከላከያ (Claude ቢሳሳትም)፦ ወደ ድርጅቱ ሂሳብ የከፈለበትን ደረሰኝ የላከ ሰው ሻጭ ሊሆን አይችልም፣ ክፍያውም ሽያጭ ሆኖ መመዝገብ አለበት።
+  const paidReceipts = messages.filter((message) => message.direction === "IN" && message.receipt?.isReceipt && message.receipt.toCompany === true);
+  const role = result.person_role === "SELLER" && paidReceipts.length > 0 ? "BUYER" : result.person_role;
+  if (paidReceipts.length > 0 && !deals.some((deal) => deal.status === "PAID" || deal.status === "DELIVERED")) {
+    const total = Math.round(paidReceipts.reduce((sum, message) => sum + (message.receipt?.amountEtb ?? 0), 0));
+    const paidAt = paidReceipts[paidReceipts.length - 1].sentAt;
+    const open = deals.filter((deal) => deal.status === "NEGOTIATING" || deal.status === "AGREED").at(-1);
+    if (open) {
+      Object.assign(open, { status: "PAID", paidToCompany: true, amountEtb: open.amountEtb ?? (total > 0 ? total : null), dealAt: paidAt });
+    } else {
+      deals.push({
+        chatId: chat.id,
+        kind: role === "STUDENT" ? "REGISTRATION" : "SALE",
+        item: "Payment shown in a receipt",
+        amountEtb: total > 0 ? total : null,
+        status: "PAID",
+        paidToCompany: true,
+        customerName: null,
+        customerPhone: null,
+        note: "ከደረሰኙ የተመዘገበ",
+        dealAt: paidAt,
+      });
+    }
+  }
+
   // የደንበኛው ዝርዝሮች፦ ከመልዕክቶቹ በህግ የተገኙት እና Claude ያወጣቸው (ለሽያጭ ያመጣቸውን የሚለየው Claude ነው)።
   const isCompanyPhone = (phone: string) => company.allow.phones.has(phone);
   let profile = readProfile(chat.profile);
@@ -168,7 +193,7 @@ export async function analyzeChat(chatRowId: string): Promise<boolean> {
       .map((account) => ({ ...cleanAccount(account), ...(account.details.trim() ? { details: account.details.trim().slice(0, 200) } : {}) })),
     accounts: shared.other_accounts.filter((account) => account.handle_or_link.trim()).map(cleanAccount),
     notes: shared.notes,
-    ...(result.person_role !== "OTHER" ? { role: result.person_role } : {}),
+    ...(role !== "OTHER" ? { role } : {}),
   });
   profile = { ...profile, phones: profile.phones.filter((phone) => !isCompanyPhone(phone)) };
   const withdrawal = result.topics.length > 0 || messages.some((message) => mentionsWithdrawal(message.text));
