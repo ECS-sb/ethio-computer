@@ -125,6 +125,16 @@ Wording for every Amharic text you write (summary, notes, reasons): call the per
    - status: NEGOTIATING, AGREED, PAID, DELIVERED (the account was handed over), REFUNDED (money returned and the deal undone) or CANCELLED.
    - evidence_message_numbers: the messages that show the price, payment or current status.`;
 
+export const ReplySchema = z.object({ reply: z.string() });
+
+const REPLY_TASK = `Task: suggest the next message the company staff should send in this chat. Messages are numbered (#1, #2, …) and marked CUSTOMER (the person), STAFF or BOT. Payment receipts the system already read are described in brackets.
+- Reply to the person's latest messages. Write only the text the staff member would send, nothing else.
+- Use the same language and script as the person: Amharic in Ge'ez letters, Amharic written in Latin letters, or English. Match the staff's earlier tone: short, polite and practical, one to three short sentences.
+- Use only facts from the chat, the notes and the company details below. Never invent prices, follower counts, dates or promises; when something is unknown, ask one short question or say the staff will check.
+- Payment goes only to the company accounts below. Never give a personal phone number, account or another app.
+- Never write passwords, verification or login codes, PINs or recovery codes.
+- If no answer is needed (for example the person only said thanks or ok), suggest a short polite closing.`;
+
 function request(task: string, company: string) {
   return {
     model: AI_MODEL,
@@ -161,6 +171,23 @@ export async function readReceipt(file: ReceiptFile, company: string): Promise<R
     return null;
   }
   return response.parsed_output ?? null;
+}
+
+/** AI ለሰራተኛው የመልስ ሀሳብ ያዘጋጃል፤ ሰራተኛው አይቶ (አስተካክሎ) በአንድ ቁልፍ ይልከዋል። */
+export async function suggestReply(header: string, transcript: string, company: string): Promise<string | null> {
+  const response = await anthropic().beta.messages.parse({
+    ...request(REPLY_TASK, company),
+    max_tokens: 2000,
+    output_config: { effort: "low", format: betaZodOutputFormat(ReplySchema) },
+    messages: [{ role: "user", content: `${header}\n\n<transcript>\n${transcript}\n</transcript>` }],
+  });
+  logUsage("reply", response.usage);
+  if (response.stop_reason === "refusal" || response.stop_reason === "max_tokens") {
+    console.warn(`telegram ai reply: stopped (${response.stop_reason})`);
+    return null;
+  }
+  const reply = response.parsed_output?.reply.trim();
+  return reply ? reply.slice(0, 4000) : null;
 }
 
 export async function analyzeTranscript(header: string, transcript: string, company: string): Promise<ChatAnalysis | null> {

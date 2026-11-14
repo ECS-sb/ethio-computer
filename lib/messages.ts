@@ -791,6 +791,26 @@ export const am = {
   "All sales and payments found by AI.": "AI ያገኛቸው ሁሉም ሽያጮችና ክፍያዎች።",
   "See alerts and deleted messages": "ማስጠንቀቂያዎችንና የተሰረዙ መልዕክቶችን ማየት",
   "Side-deal alerts, deleted messages and text before edits.": "የሽሽጥ ማስጠንቀቂያዎች፣ የተሰረዙ መልዕክቶች እና ከመቀየሩ በፊት የነበረው ጽሑፍ።",
+
+  // ---- ከዌብሳይቱ መመለስ፣ የAI የመልስ ሀሳብ፣ ለገዢው/ለሻጩ ማስተላለፍ
+  "Write a message": "መልዕክት ይጻፉ",
+  "AI suggestion: check before sending": "የAI የመልስ ሀሳብ፦ ከመላክዎ በፊት ያንብቡት",
+  "AI is writing a reply…": "AI መልስ እያዘጋጀ ነው…",
+  "Another suggestion": "ሌላ ሀሳብ",
+  "Suggest a reply with AI": "AI መልስ ያዘጋጅ",
+  "AI could not suggest a reply for this chat.": "AI ለዚህ ቻት መልስ ማዘጋጀት አልቻለም።",
+  "To reply from here, turn on the bot's Reply permission: Telegram → Settings → Telegram Business → Chatbots → @ethiocs_monitor_bot.": "ከዚህ ለመመለስ የቦቱን የ\"Reply\" ፈቃድ ያብሩ፦ ቴሌግራም → Settings → Telegram Business → Chatbots → @ethiocs_monitor_bot።",
+  "Telegram only allows replies within 24 hours of the person's last message. Ask them to write first.": "ቴሌግራም የሚፈቅደው ሰውየው በጻፈ በ24 ሰዓት ውስጥ ብቻ ነው። መጀመሪያ እንዲጽፉ ይጠይቋቸው።",
+  "The bot is not allowed to reply yet. Turn on its Reply permission in Telegram Business settings.": "ቦቱ ገና መመለስ አልተፈቀደለትም። በTelegram Business ቅንብሮች ውስጥ የ\"Reply\" ፈቃዱን ያብሩ።",
+  "Telegram did not accept the message. Check the bot's Reply permission and try again.": "ቴሌግራም መልዕክቱን አልተቀበለም። የቦቱን የ\"Reply\" ፈቃድ አረጋግጠው እንደገና ይሞክሩ።",
+  "These two chats are not linked by a channel.": "እነዚህ ሁለት ቻቶች በቻናል አልተገናኙም።",
+  "This message has nothing that can be sent on.": "ይህ መልዕክት የሚላክ ጽሑፍ ወይም ፋይል የለውም።",
+  "Relayed": "ተላልፏል",
+  "Send to buyer ({name})": "ለገዢው ላክ ({name})",
+  "Send to seller ({name})": "ለሻጩ ላክ ({name})",
+  "Sent to {name}": "ለ{name} ተልኳል",
+  "Sent to {name}.": "ለ{name} ተልኳል።",
+  "Buyer not marked as paid. Click again to send.": "ገዢው እንደከፈለ አልተመዘገበም። ለመላክ እንደገና ይጫኑ።",
 } as const;
 
 export type MessageKey = keyof typeof am;

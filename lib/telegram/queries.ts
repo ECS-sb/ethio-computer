@@ -121,7 +121,9 @@ export async function getTelegramChat(id: string) {
       profile: true,
       tags: true,
       _count: { select: { messages: true } },
-      connection: { select: { ownerName: true, ownerUsername: true } },
+      connection: { select: { ownerName: true, ownerUsername: true, canReply: true, isEnabled: true } },
+      suggestedReply: true,
+      suggestedForMessageId: true,
       deals: {
         orderBy: { dealAt: "desc" },
         select: { id: true, kind: true, item: true, amountEtb: true, status: true, paidToCompany: true, note: true, dealAt: true },
@@ -152,6 +154,8 @@ export async function getTelegramChat(id: string) {
       editedAt: true,
       previousText: true,
       deletedAt: true,
+      sentByName: true,
+      relayedFromId: true,
       receipt: {
         select: { isReceipt: true, provider: true, amountEtb: true, recipientName: true, recipientAccount: true, transactionId: true, toCompany: true },
       },

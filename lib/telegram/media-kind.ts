@@ -34,3 +34,11 @@ export function defaultMimeType(mediaType: string | null): string {
       return "application/octet-stream";
   }
 }
+
+/** ቦቱ በfile_id እንደገና ሊልካቸው የሚችላቸው የሚዲያ አይነቶች ("ለገዢው ላክ")። */
+export const RELAYABLE_MEDIA = ["photo", "document", "video", "voice", "audio"] as const;
+export type RelayableMedia = (typeof RELAYABLE_MEDIA)[number];
+
+export function isRelayableMedia(value: string | null): value is RelayableMedia {
+  return value !== null && (RELAYABLE_MEDIA as readonly string[]).includes(value);
+}

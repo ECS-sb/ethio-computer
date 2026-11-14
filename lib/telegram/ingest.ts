@@ -139,7 +139,7 @@ export function canHoldReceipt(mediaType: string | null, mimeType: string | null
   return mediaType === "document" && (mimeType === "application/pdf" || /^image\/(jpeg|png|webp|gif)$/.test(mimeType ?? ""));
 }
 
-async function saveMessage(message: TgMessage, isEdit: boolean): Promise<SavedMessage> {
+async function saveMessage(message: TgMessage, isEdit: boolean, options: { skipDetection?: boolean } = {}): Promise<SavedMessage> {
   if (!message.business_connection_id) return { alerts: [], receiptCandidate: null, mediaCopy: null };
   const connection = await ensureConnection(message.business_connection_id);
   const viaBot = Boolean(message.sender_business_bot);
@@ -185,7 +185,7 @@ async function saveMessage(message: TgMessage, isEdit: boolean): Promise<SavedMe
     ...fields,
   } as const;
 
-  let row: { id: string };
+  let row: { id: string; relayedFromId?: string | null };
   if (isEdit) {
     const editedAt = new Date((message.edit_date ?? message.date) * 1000);
     const existing = await db.telegramMessage.findUnique({ where: key, select: { id: true, text: true, previousText: true } });
@@ -198,8 +198,10 @@ async function saveMessage(message: TgMessage, isEdit: boolean): Promise<SavedMe
       : await db.telegramMessage.create({ data: { ...base, editedAt }, select: { id: true } });
   } else {
     // Telegram አንድን update ደግሞ ሊልክ ስለሚችል upsert ነው።
-    row = await db.telegramMessage.upsert({ where: key, create: base, update: {}, select: { id: true } });
+    row = await db.telegramMessage.upsert({ where: key, create: base, update: {}, select: { id: true, relayedFromId: true } });
   }
+  // ከሻጩ ወደ ገዢው የተላለፈ መልዕክት (ኮድ፣ ኢሜይል…) የሰራተኛ ሽሽጥ ስላልሆነ አይፈተሽም።
+  const relayed = Boolean(options.skipDetection || row.relayedFromId);
 
   await updateChatDetails(chat, content, outgoing);
   // ፎቶው ቢሰረዝም እንዲታይ ቅጂው ወዲያውኑ ይቀመጣል (ከሁለቱም ወገን)።
@@ -209,6 +211,7 @@ async function saveMessage(message: TgMessage, isEdit: boolean): Promise<SavedMe
     const receiptCandidate = !isEdit && canHoldReceipt(content.mediaType, content.mimeType) ? row.id : null;
     return { alerts: [], receiptCandidate, mediaCopy };
   }
+  if (relayed) return { alerts: [], receiptCandidate: null, mediaCopy };
   const findings = await dropListedAccounts(detectSideDeal(content.scanText, await loadAllowlist(), { contactPhone: content.contactPhone }));
   return { alerts: await recordAlerts(chat, row.id, connection.ownerName, content.text, findings), receiptCandidate: null, mediaCopy };
 }
@@ -250,6 +253,19 @@ async function saveDeletion(deleted: TgBusinessMessagesDeleted): Promise<NewAler
  * አንድን የቴሌግራም update ያስቀምጣል። ለባለቤቱ መላክ ያለባቸውን አዲስ ከፍተኛ ማስጠንቀቂያዎች፣
  * Claude ሊያነበው የሚገባ የደረሰኝ መልዕክት፣ እና ቅጂው መቀመጥ ያለበት ፎቶ (ካሉ) ይመልሳል።
  */
+/**
+ * ከዌብሳይቱ የተላከ መልዕክት (የቴሌግራም መልሱ) እንደ ሌሎቹ መልዕክቶች ይቀመጣል፤ ቴሌግራም በኋላ በwebhook ቢልከውም አይደገምም።
+ * የተቀመጠውን መልዕክት መለያ እና (ካሉ) ማስጠንቀቂያዎችን ይመልሳል።
+ */
+export async function recordSentMessage(message: TgMessage, businessConnectionId: string, options: { skipDetection?: boolean } = {}) {
+  const saved = await saveMessage({ ...message, business_connection_id: message.business_connection_id ?? businessConnectionId }, false, options);
+  const row = await db.telegramMessage.findFirst({
+    where: { messageId: message.message_id, chat: { chatId: BigInt(message.chat.id), connectionId: businessConnectionId } },
+    select: { id: true },
+  });
+  return { messageRowId: row?.id ?? null, alerts: saved.alerts, mediaCopy: saved.mediaCopy };
+}
+
 export async function handleBusinessUpdate(update: TgUpdate): Promise<{ alerts: NewAlert[]; receiptMessageIds: string[]; mediaMessageIds: string[] }> {
   const alerts: NewAlert[] = [];
   const receiptMessageIds: string[] = [];

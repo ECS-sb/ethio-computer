@@ -15,7 +15,9 @@ import { analyzeChat, analyzePending } from "@/lib/telegram/analyze";
 import * as channels from "@/lib/telegram/channel-store";
 import { getTelegramViewer } from "@/lib/telegram/access";
 import { isPermission, type Permission } from "@/lib/telegram/permissions";
+import * as outbox from "@/lib/telegram/outbox";
 import * as staff from "@/lib/telegram/staff";
+import { suggestionFor } from "@/lib/telegram/suggest";
 import { sendAlertNotifications } from "@/lib/telegram/report";
 
 export type ActionResult = { ok: boolean; message: MessageKey; code?: string; id?: string };
@@ -345,6 +347,45 @@ export async function deleteTelegramChannelAction(data: FormData): Promise<Actio
   const parsed = id.safeParse(field(data, "id"));
   if (!parsed.success) return INVALID;
   return run("Deleted.", () => channels.deleteChannel(parsed.data));
+}
+
+// ---- ከዌብሳይቱ መመለስ፣ የAI የመልስ ሀሳብ፣ "ለገዢው ላክ"
+
+export async function sendTelegramReplyAction(data: FormData): Promise<ActionResult> {
+  const viewer = await getTelegramViewer();
+  if (!viewer?.can.chats || !viewer.can.reply) return NOT_ALLOWED;
+  const parsed = z.object({ id, text: z.string().trim().min(1).max(4000) }).safeParse(Object.fromEntries(data));
+  if (!parsed.success) return INVALID;
+  return run("Sent.", async () => {
+    await outbox.sendReply(parsed.data.id, parsed.data.text, { userId: viewer.userId, name: viewer.name });
+  });
+}
+
+export async function relayTelegramMessageAction(data: FormData): Promise<ActionResult> {
+  const viewer = await getTelegramViewer();
+  if (!viewer?.can.chats || !viewer.can.reply || !viewer.can.channels) return NOT_ALLOWED;
+  const parsed = z.object({ id, to: id }).safeParse(Object.fromEntries(data));
+  if (!parsed.success) return INVALID;
+  return run("Sent.", async () => {
+    await outbox.relayMessage(parsed.data.id, parsed.data.to, { userId: viewer.userId, name: viewer.name });
+  });
+}
+
+export type SuggestionResult = { ok: boolean; message: MessageKey; text?: string };
+
+export async function suggestTelegramReplyAction(chatId: string, force: boolean): Promise<SuggestionResult> {
+  const viewer = await getTelegramViewer();
+  if (!viewer?.can.chats || !viewer.can.reply) return NOT_ALLOWED;
+  const parsed = id.safeParse(chatId);
+  if (!parsed.success) return INVALID;
+  try {
+    const text = await suggestionFor(parsed.data, force === true);
+    return text ? { ok: true, message: "Saved.", text } : { ok: false, message: "AI could not suggest a reply for this chat." };
+  } catch (error) {
+    if (error instanceof market.DomainError) return { ok: false, message: error.key };
+    console.error(error);
+    return { ok: false, message: "Something went wrong. Please try again." };
+  }
 }
 
 // ---- የቴሌግራም ሰራተኞችና ፈቃዶቻቸው (አድሚን ብቻ)

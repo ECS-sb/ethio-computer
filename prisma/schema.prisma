@@ -340,6 +340,10 @@ model TelegramChat {
   profile        Json?
   /// በቁልፍ ቃል ወይም በAI የተገኙ ርዕሶች፤ ለምሳሌ "withdrawal" (ከቲክቶክ ገንዘብ ማውጣት፣ የPayPal/ዶላር ምንዛሬ)
   tags           String[]           @default([])
+  /// AI ያዘጋጀው የመልስ ሀሳብ እና የሚመልሰው የሰውየው መልዕክት (አዲስ መልዕክት ሲመጣ አዲስ ሀሳብ ይዘጋጃል)
+  suggestedReply        String?
+  suggestedForMessageId String?
+  suggestedAt           DateTime?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
@@ -372,6 +376,11 @@ model TelegramMessage {
   editedAt     DateTime?
   previousText String?
   deletedAt    DateTime?
+  /// ከዌብሳይቱ የተላከ ከሆነ የላከው ሰራተኛ (ከስልክ የተላከ መልዕክት ይህ የለውም፤ ቴሌግራም ዲቫይሱን አይነግርም)
+  sentByUserId String?
+  sentByName   String?
+  /// "ለገዢው ላክ"፦ ከሌላኛው ቻት (ለምሳሌ ከሻጩ) ተወስዶ የተላከበት መልዕክት
+  relayedFromId String?
   createdAt    DateTime          @default(now())
 
   alerts    TelegramAlert[]

@@ -1,4 +1,5 @@
 import "server-only";
+import type { RelayableMedia } from "@/lib/telegram/media-kind";
 import type { TgBusinessConnection, TgMessage } from "@/lib/telegram/types";
 
 /** ለሙከራ ብቻ ሊቀየር ይችላል (የውሸት የቴሌግራም ሰርቨር)፤ በproduction አይቀመጥም። */
@@ -42,6 +43,38 @@ export function sendMessage(chatId: string | number, html: string) {
     text: html.slice(0, 4096),
     parse_mode: "HTML",
     link_preview_options: { is_disabled: true },
+  });
+}
+
+/**
+ * በድርጅቱ የቴሌግራም አካውንት ስም ለደንበኛው መልዕክት ይልካል (ቦቱ የ"Reply" ፈቃድ ሲኖረው ብቻ)።
+ * ቴሌግራም የሚፈቅደው ሰውየው ባለፉት 24 ሰዓታት ውስጥ የጻፈባቸውን ቻቶች ብቻ ነው። ጽሑፉ እንዳለ (plain text) ይላካል።
+ */
+export function sendBusinessText(businessConnectionId: string, chatId: string, text: string) {
+  return callTelegram<TgMessage>("sendMessage", {
+    business_connection_id: businessConnectionId,
+    chat_id: chatId,
+    text: text.slice(0, 4096),
+    link_preview_options: { is_disabled: true },
+  });
+}
+
+const FILE_METHODS: Record<RelayableMedia, [method: string, field: string]> = {
+  photo: ["sendPhoto", "photo"],
+  document: ["sendDocument", "document"],
+  video: ["sendVideo", "video"],
+  voice: ["sendVoice", "voice"],
+  audio: ["sendAudio", "audio"],
+};
+
+/** ቦቱ የተቀበለውን ፋይል (በfile_id) እንደገና ይልካል፦ ለምሳሌ የሻጩን የኮድ ፎቶ ለገዢው። */
+export function sendBusinessFile(businessConnectionId: string, chatId: string, kind: RelayableMedia, fileId: string, caption: string) {
+  const [method, field] = FILE_METHODS[kind];
+  return callTelegram<TgMessage>(method, {
+    business_connection_id: businessConnectionId,
+    chat_id: chatId,
+    [field]: fileId,
+    ...(caption && kind !== "voice" ? { caption: caption.slice(0, 1024) } : {}),
   });
 }
 

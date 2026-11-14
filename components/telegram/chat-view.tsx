@@ -5,8 +5,10 @@ import { LocaleLink } from "@/components/i18n-provider";
 import { ChannelCard } from "@/components/telegram/channel-card";
 import { ChannelAddDialog } from "@/components/telegram/channel-dialogs";
 import { ChatAvatar } from "@/components/telegram/chat-avatar";
+import { ChatComposer, type ComposerState } from "@/components/telegram/chat-composer";
 import { ChatInsights } from "@/components/telegram/chat-insights";
 import { ProfileDialog } from "@/components/telegram/profile-dialog";
+import { RelayButtons, type RelayTarget } from "@/components/telegram/relay-button";
 import { RoleBadge } from "@/components/telegram/role-badge";
 import { Badge } from "@/components/ui/badge";
 import { analyzeTelegramChatAction, resolveTelegramAlertAction } from "@/lib/actions";
@@ -18,6 +20,8 @@ import { alertLabels, dealKindLabels, dealStatusLabels, evidenceText, mediaLabel
 import { mediaKind } from "@/lib/telegram/media-kind";
 import type { Permissions } from "@/lib/telegram/permissions";
 import { readProfile } from "@/lib/telegram/profile";
+import { isRelayableMedia } from "@/lib/telegram/media-kind";
+import { canReplyNow } from "@/lib/telegram/reply-window";
 import { summarizeDeals } from "@/lib/telegram/stats";
 import type { getTelegramChat } from "@/lib/telegram/queries";
 import { getLinkCandidates, TELEGRAM_CHAT_PAGE } from "@/lib/telegram/queries";
@@ -72,7 +76,9 @@ function MessageMedia({ t, message }: { t: T; message: Message }) {
   return label ? <span className="block text-xs font-semibold">[{label}]</span> : null;
 }
 
-function MessageBubble({ t, message, showMonitoring }: { t: T; message: Message; showMonitoring: boolean }) {
+function MessageBubble({ t, message, showMonitoring, relayTargets }: { t: T; message: Message; showMonitoring: boolean; relayTargets: RelayTarget[] }) {
+  // "ለገዢው/ለሻጩ ላክ" የሚታየው ሰውየው በጻፈው (ያልተሰረዘ፣ የሚላክ ነገር ያለው) መልዕክት ስር ብቻ ነው።
+  const relayable = relayTargets.length > 0 && message.direction === "IN" && !message.deletedAt && (message.text.trim() !== "" || isRelayableMedia(message.mediaType));
   const outgoing = message.direction === "OUT";
   return (
     // id፦ ከማስጠንቀቂያ ሲመጡ (#m-…) በቀጥታ ወደዚህ መልዕክት ይሄዳል፤ :target ያደምቀዋል።
@@ -94,7 +100,8 @@ function MessageBubble({ t, message, showMonitoring }: { t: T; message: Message;
         {message.mediaType ? <MessageMedia t={t} message={message} /> : null}
         {message.text}
         <span className="mt-1 flex items-center justify-end gap-2 text-[11px] opacity-70">
-          {message.viaBot ? <span>{t("Sent by bot")}</span> : null}
+          {message.relayedFromId ? <span>{t("Relayed")}</span> : null}
+          {message.sentByName ? <span className="font-semibold">{message.sentByName}</span> : message.viaBot ? <span>{t("Sent by bot")}</span> : null}
           {message.editedAt ? <span>{t("Edited")}</span> : null}
           {message.deletedAt ? <span className="font-semibold">{t("Deleted")}</span> : null}
           <time dateTime={message.sentAt.toISOString()}>{messageTime(message.sentAt)}</time>
@@ -111,6 +118,7 @@ function MessageBubble({ t, message, showMonitoring }: { t: T; message: Message;
           {message.receipt.isReceipt ? <Badge variant={paymentVariant(message.receipt.toCompany)}>{t(paymentLabel(message.receipt.toCompany))}</Badge> : null}
         </p>
       ) : null}
+      {relayable ? <RelayButtons messageId={message.id} targets={relayTargets} /> : null}
       {showMonitoring && message.previousText !== null ? (
         <p className="max-w-[85%] text-xs break-words whitespace-pre-line text-muted-foreground sm:max-w-[75%]">
           {t("Before edit:")} {message.previousText}
@@ -130,6 +138,30 @@ export async function ChatView({ chat, backHref, now, viewer }: { chat: ChatData
   const deals = summarizeDeals(chat.deals);
   const profile = readProfile(chat.profile);
   const channels = can.channels ? [...chat.channelsSold, ...chat.channelsBought].sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime()) : [];
+  // ይህ ቻት በቻናል የተገናኘባቸው ሌሎች ቻቶች (ሻጩ ↔ ገዢው)፦ ኮድና ፓስዎርድ በድርጅቱ በኩል የሚተላለፍባቸው።
+  const relayTargets: RelayTarget[] = [];
+  if (can.reply && can.channels) {
+    for (const channel of chat.channelsSold) {
+      if (channel.buyerChat && !relayTargets.some((target) => target.chatId === channel.buyerChat?.id)) {
+        relayTargets.push({ chatId: channel.buyerChat.id, name: channel.buyerChat.name, side: "buyer", paid: channel.saleStatus === "PAID" || channel.saleStatus === "DELIVERED" });
+      }
+    }
+    for (const channel of chat.channelsBought) {
+      if (channel.sellerChat && !relayTargets.some((target) => target.chatId === channel.sellerChat?.id)) {
+        relayTargets.push({ chatId: channel.sellerChat.id, name: channel.sellerChat.name, side: "seller", paid: true });
+      }
+    }
+  }
+  // የመጻፊያ ሳጥኑ፦ ቦቱ ፈቃድ አለው? ሰውየው ባለፉት 24 ሰዓታት ጽፏል? AI ሀሳብ ያዘጋጅ?
+  const visible = chat.messages.filter((message) => !message.deletedAt);
+  const lastVisible = visible.at(-1);
+  const lastIn = [...visible].reverse().find((message) => message.direction === "IN");
+  const composerState: ComposerState =
+    !chat.connection.canReply || !chat.connection.isEnabled ? "botNotAllowed" : canReplyNow(chat.lastInboundAt, now) ? "ready" : "windowClosed";
+  const awaitingReply = lastVisible?.direction === "IN";
+  const storedSuggestion = awaitingReply && lastIn && chat.suggestedForMessageId === lastIn.id ? chat.suggestedReply : null;
+  const autoSuggestFor = composerState === "ready" && awaitingReply && !storedSuggestion && lastIn ? lastIn.id : null;
+
   // ሻጭ ወይም ገዢ ያልተገናኘለት ቻናል ካለ፣ በእጅ ለማገናኘት የሚመረጡት ይመጣሉ።
   const candidates = channels.some((channel) => !channel.sellerChat || !channel.buyerChat) ? await getLinkCandidates(chat.id) : undefined;
 
@@ -294,12 +326,21 @@ export async function ChatView({ chat, backHref, now, viewer }: { chat: ChatData
                 {dayLabel(item.date)}
               </p>
             ) : (
-              <MessageBubble key={item.message.id} t={t} message={item.message} showMonitoring={can.alerts} />
+              <MessageBubble key={item.message.id} t={t} message={item.message} showMonitoring={can.alerts} relayTargets={relayTargets} />
             )
           )}
           {chat.messages.length === 0 ? <p className="m-auto text-sm text-muted-foreground">{t("No messages saved for this chat yet.")}</p> : null}
         </div>
       </div>
+      {can.reply ? (
+        <ChatComposer
+          chatId={chat.id}
+          state={composerState}
+          aiEnabled={chat.aiEnabled}
+          initialSuggestion={storedSuggestion}
+          autoSuggestFor={autoSuggestFor}
+        />
+      ) : null}
     </section>
   );
 }
