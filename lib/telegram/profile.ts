@@ -3,6 +3,10 @@ import { normalizePhone } from "@/lib/telegram/detect";
 
 export type ProfileAccount = { platform: string; value: string; details?: string };
 
+/** ሰውየው ከድርጅቱ ጋር ያለው ግንኙነት፦ አካውንት የሚገዛ፣ አካውንት ሊሸጥልን ያመጣ፣ ወይም ለኮርስ የሚመዘገብ (AI ይለየዋል)። */
+export const PERSON_ROLES = ["BUYER", "SELLER", "STUDENT"] as const;
+export type PersonRole = (typeof PERSON_ROLES)[number];
+
 export type CustomerProfile = {
   phones: string[];
   emails: string[];
@@ -11,6 +15,7 @@ export type CustomerProfile = {
   /** ደንበኛው የላካቸው ሌሎች አካውንቶች ወይም ሊንኮች */
   accounts: ProfileAccount[];
   notes: string;
+  role?: PersonRole;
 };
 
 export const WITHDRAWAL_TAG = "withdrawal";
@@ -38,6 +43,7 @@ export function readProfile(json: unknown): CustomerProfile {
     forSale: accounts(value.forSale),
     accounts: accounts(value.accounts),
     notes: typeof value.notes === "string" ? value.notes : "",
+    ...(PERSON_ROLES.includes(value.role as PersonRole) ? { role: value.role as PersonRole } : {}),
   };
 }
 
@@ -69,7 +75,7 @@ function unionAccounts(first: ProfileAccount[], second: ProfileAccount[]): Profi
   return result.slice(0, MAX_ITEMS);
 }
 
-/** ሁለት ፕሮፋይሎችን ያዋህዳል፤ ለሽያጭ የቀረበ አካውንት ከ"ሌሎች አካውንቶች" ውስጥ ይወጣል። */
+/** ሁለት ፕሮፋይሎችን ያዋህዳል፤ ለሽያጭ የቀረበ አካውንት ከ"ሌሎች አካውንቶች" ውስጥ ይወጣል። አዲሱ የAI የሚና ውሳኔ የቀድሞውን ይተካል። */
 export function mergeProfile(base: CustomerProfile, update: Partial<CustomerProfile>): CustomerProfile {
   const forSale = unionAccounts(base.forSale, update.forSale ?? []);
   const forSaleKeys = new Set(forSale.map(accountKey));
@@ -79,6 +85,7 @@ export function mergeProfile(base: CustomerProfile, update: Partial<CustomerProf
     forSale,
     accounts: unionAccounts(base.accounts, update.accounts ?? []).filter((account) => !forSaleKeys.has(accountKey(account))),
     notes: update.notes?.trim() ? update.notes.trim().slice(0, 500) : base.notes,
+    ...((update.role ?? base.role) ? { role: update.role ?? base.role } : {}),
   };
 }
 

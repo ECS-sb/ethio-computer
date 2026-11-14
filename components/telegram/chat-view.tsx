@@ -1,16 +1,18 @@
 import Image from "next/image";
-import { ArrowLeftIcon, ChevronDownIcon, ExternalLinkIcon, FileIcon, SparklesIcon, TriangleAlertIcon } from "lucide-react";
+import { ArrowLeftIcon, ExternalLinkIcon, FileIcon } from "lucide-react";
 import { ActionButton } from "@/components/action-form";
 import { LocaleLink } from "@/components/i18n-provider";
 import { ChatAvatar } from "@/components/telegram/chat-avatar";
+import { ChatInsights } from "@/components/telegram/chat-insights";
 import { ProfileDialog } from "@/components/telegram/profile-dialog";
+import { RoleBadge } from "@/components/telegram/role-badge";
 import { Badge } from "@/components/ui/badge";
 import { analyzeTelegramChatAction, resolveTelegramAlertAction } from "@/lib/actions";
 import { formatDateTime, formatPrice } from "@/lib/catalog";
 import type { T } from "@/lib/i18n";
 import { getT } from "@/lib/i18n-server";
 import { chatListTime, dayKey, dayLabel, isRecentlyActive, messageTime } from "@/lib/telegram/format";
-import { alertLabels, dealKindLabels, dealStatusLabels, evidenceText, mediaLabels, paymentLabel, severityLabels } from "@/lib/telegram/labels";
+import { alertLabels, dealKindLabels, dealStatusLabels, evidenceText, mediaLabels, paymentLabel, roleLabels, severityLabels } from "@/lib/telegram/labels";
 import { mediaKind } from "@/lib/telegram/media-kind";
 import { readProfile } from "@/lib/telegram/profile";
 import { summarizeDeals } from "@/lib/telegram/stats";
@@ -140,123 +142,118 @@ export async function ChatView({ chat, backHref, now }: { chat: ChatData; backHr
       aria-label={t("Chat with {name}", { name: chat.name })}
       className="flex h-[calc(100dvh-9rem)] min-h-[28rem] min-w-0 flex-col overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 lg:h-[calc(100dvh-var(--tg-offset,18rem))] lg:min-h-[24rem]"
     >
-      <header className="flex items-center gap-3 border-b border-border p-4">
-        <LocaleLink href={backHref} aria-label={t("Back to chats")} className="text-muted-foreground hover:text-foreground lg:hidden">
-          <ArrowLeftIcon className="size-5" />
-        </LocaleLink>
-        <ChatAvatar name={chat.name} active={activeNow} />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex min-w-0 items-center gap-1">
-            <h1 className="truncate font-semibold">{chat.name}</h1>
-            <ProfileDialog
-              name={chat.name}
-              username={chat.username}
-              telegramId={chat.chatId}
-              profile={profile}
-              stats={{
-                firstSeen: formatDateTime(chat.createdAt),
-                messages: chat._count.messages,
-                deals: chat.deals.length,
-                paid: deals.paidEtb > 0 ? formatPrice(t, deals.paidEtb) : null,
-              }}
-            />
-          </div>
-          <span className="truncate text-xs text-muted-foreground">
-            {activeNow ? (
-              <span className="font-medium text-primary">{t("Active now")} · </span>
-            ) : chat.lastInboundAt ? (
-              <span>{t("Last active {time}", { time: chatListTime(chat.lastInboundAt, now) })} · </span>
-            ) : null}
-            {chat.username ? <span dir="ltr">@{chat.username} · </span> : null}
-            {chat.connection.ownerName}
-          </span>
-        </div>
-        {chat.username ? (
-          <a
-            href={`https://t.me/${chat.username}`}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={t("Open in Telegram")}
-            title={t("Open in Telegram")}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <ExternalLinkIcon className="size-5" />
-          </a>
-        ) : null}
-      </header>
-
-      {chat.aiEnabled || chat.aiSummary || openAlerts.length > 0 ? (
-        <details open={openAlerts.length > 0} className="group border-b border-border">
-          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm [&::-webkit-details-marker]:hidden">
-            <SparklesIcon className="size-4 text-primary" />
-            <span className="font-medium">{t("AI summary")}</span>
-            {chat.deals.length > 0 ? <Badge variant="secondary">{t("{count} deals", { count: chat.deals.length })}</Badge> : null}
-            {openAlerts.length > 0 ? (
-              <Badge variant="destructive">
-                <TriangleAlertIcon />
-                {openAlerts.length}
-              </Badge>
-            ) : null}
-            <ChevronDownIcon className="ms-auto size-4 text-muted-foreground transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="flex max-h-52 flex-col gap-4 overflow-y-auto px-4 pb-4 text-sm">
-            {openAlerts.map((alert) => (
-              <div key={alert.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-destructive/10 p-3">
-                <div className="flex min-w-0 flex-wrap items-center gap-2">
-                  <Badge variant={severityVariant[alert.severity]}>{t(severityLabels[alert.severity])}</Badge>
-                  <span className="font-semibold">{t(alertLabels[alert.type])}</span>
-                  <code dir="auto" className="rounded-xl bg-muted px-2 py-0.5 text-xs break-all">
-                    {evidenceText(t, alert.type, alert.evidence)}
-                  </code>
-                  <span className="text-xs text-muted-foreground">{formatDateTime(alert.createdAt)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {alert.messageId && loadedIds.has(alert.messageId) ? (
-                    <a
-                      href={`#m-${alert.messageId}`}
-                      className="rounded-xl px-3 py-1.5 text-xs font-medium text-primary ring-1 ring-primary/40 transition-colors hover:bg-primary/10"
-                    >
-                      {alert.type === "DELETED_MESSAGE" ? t("Show deleted message") : t("Go to message")}
-                    </a>
-                  ) : null}
-                  <ActionButton action={resolveTelegramAlertAction} id={alert.id} variant="outline" size="sm">
-                    {t("Mark resolved")}
-                  </ActionButton>
-                </div>
+      <ChatInsights
+        alertCount={openAlerts.length}
+        header={
+          <>
+            <LocaleLink href={backHref} aria-label={t("Back to chats")} className="text-muted-foreground hover:text-foreground lg:hidden">
+              <ArrowLeftIcon className="size-5" />
+            </LocaleLink>
+            <ChatAvatar name={chat.name} active={activeNow} className="size-9" />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <h1 className="truncate text-sm leading-5 font-semibold">{chat.name}</h1>
+                {profile.role ? <RoleBadge role={profile.role} label={t(roleLabels[profile.role])} /> : null}
+                <ProfileDialog
+                  name={chat.name}
+                  username={chat.username}
+                  telegramId={chat.chatId}
+                  profile={profile}
+                  stats={{
+                    firstSeen: formatDateTime(chat.createdAt),
+                    messages: chat._count.messages,
+                    deals: chat.deals.length,
+                    paid: deals.paidEtb > 0 ? formatPrice(t, deals.paidEtb) : null,
+                  }}
+                />
               </div>
-            ))}
-            {chat.aiSummary ? <p className="break-words whitespace-pre-line">{chat.aiSummary}</p> : null}
-            {chat.deals.length > 0 ? (
-              <ul className="flex flex-col gap-2">
-                {chat.deals.map((deal) => (
-                  <li key={deal.id} className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">{t(dealKindLabels[deal.kind])}</Badge>
-                    <span className="font-medium break-words">{deal.item}</span>
-                    {deal.amountEtb !== null ? <span>· {formatPrice(t, deal.amountEtb)}</span> : null}
-                    <Badge variant="secondary">{t(dealStatusLabels[deal.status])}</Badge>
-                    {deal.status === "PAID" || deal.status === "DELIVERED" ? (
-                      <Badge variant={paymentVariant(deal.paidToCompany)}>{t(paymentLabel(deal.paidToCompany))}</Badge>
-                    ) : null}
-                    {deal.note ? <span className="text-muted-foreground">· {deal.note}</span> : null}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              {chat.analyzedAt ? (
-                <span className="text-xs text-muted-foreground">{t("Analyzed {date}", { date: formatDateTime(chat.analyzedAt) })}</span>
-              ) : (
-                <span />
-              )}
-              {chat.aiEnabled ? (
-                <ActionButton action={analyzeTelegramChatAction} id={chat.id} variant="outline" size="sm">
-                  {t("Analyze this chat")}
-                </ActionButton>
-              ) : null}
+              <span className="truncate text-[11px] leading-4 text-muted-foreground">
+                {activeNow ? (
+                  <span className="font-medium text-[var(--tg-link,var(--primary))]">{t("Active now")} · </span>
+                ) : chat.lastInboundAt ? (
+                  <span>{t("Last active {time}", { time: chatListTime(chat.lastInboundAt, now) })} · </span>
+                ) : null}
+                {chat.username ? <span dir="ltr">@{chat.username} · </span> : null}
+                {chat.connection.ownerName}
+              </span>
             </div>
-          </div>
-        </details>
-      ) : null}
+          </>
+        }
+        actions={
+          chat.username ? (
+            <a
+              href={`https://t.me/${chat.username}`}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={t("Open in Telegram")}
+              title={t("Open in Telegram")}
+              className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              <ExternalLinkIcon className="size-4" />
+            </a>
+          ) : null
+        }
+        panel={
+          chat.aiEnabled || chat.aiSummary || openAlerts.length > 0 ? (
+            <>
+              {openAlerts.map((alert) => (
+                <div key={alert.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-destructive/10 p-3">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <Badge variant={severityVariant[alert.severity]}>{t(severityLabels[alert.severity])}</Badge>
+                    <span className="font-semibold">{t(alertLabels[alert.type])}</span>
+                    <code dir="auto" className="rounded-xl bg-muted px-2 py-0.5 text-xs break-all">
+                      {evidenceText(t, alert.type, alert.evidence)}
+                    </code>
+                    <span className="text-xs text-muted-foreground">{formatDateTime(alert.createdAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {alert.messageId && loadedIds.has(alert.messageId) ? (
+                      <a
+                        href={`#m-${alert.messageId}`}
+                        className="rounded-xl px-3 py-1.5 text-xs font-medium text-primary ring-1 ring-primary/40 transition-colors hover:bg-primary/10"
+                      >
+                        {alert.type === "DELETED_MESSAGE" ? t("Show deleted message") : t("Go to message")}
+                      </a>
+                    ) : null}
+                    <ActionButton action={resolveTelegramAlertAction} id={alert.id} variant="outline" size="sm">
+                      {t("Mark resolved")}
+                    </ActionButton>
+                  </div>
+                </div>
+              ))}
+              {chat.aiSummary ? <p className="break-words whitespace-pre-line">{chat.aiSummary}</p> : null}
+              {chat.deals.length > 0 ? (
+                <ul className="flex flex-col gap-2">
+                  {chat.deals.map((deal) => (
+                    <li key={deal.id} className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline">{t(dealKindLabels[deal.kind])}</Badge>
+                      <span className="font-medium break-words">{deal.item}</span>
+                      {deal.amountEtb !== null ? <span>· {formatPrice(t, deal.amountEtb)}</span> : null}
+                      <Badge variant="secondary">{t(dealStatusLabels[deal.status])}</Badge>
+                      {deal.status === "PAID" || deal.status === "DELIVERED" ? (
+                        <Badge variant={paymentVariant(deal.paidToCompany)}>{t(paymentLabel(deal.paidToCompany))}</Badge>
+                      ) : null}
+                      {deal.note ? <span className="text-muted-foreground">· {deal.note}</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                {chat.analyzedAt ? (
+                  <span className="text-xs text-muted-foreground">{t("Analyzed {date}", { date: formatDateTime(chat.analyzedAt) })}</span>
+                ) : (
+                  <span />
+                )}
+                {chat.aiEnabled ? (
+                  <ActionButton action={analyzeTelegramChatAction} id={chat.id} variant="outline" size="sm">
+                    {t("Analyze this chat")}
+                  </ActionButton>
+                ) : null}
+              </div>
+            </>
+          ) : null
+        }
+      />
 
       {/* flex-col-reverse፦ ገጹ ሲከፈት በቀጥታ የመጨረሻዎቹ መልዕክቶች ላይ ይቆማል። */}
       <div className="flex min-h-0 flex-1 flex-col-reverse overflow-y-auto bg-background">

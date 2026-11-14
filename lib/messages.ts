@@ -538,11 +538,8 @@ export const am = {
   // ---- Telegram ክትትል (አድሚን እና የቦቱ ሪፖርቶች)
   "Telegram monitoring": "የቴሌግራም ክትትል",
   "Telegram chat": "የቴሌግራም ቻት",
-  "Customer messages today": "የዛሬ የደንበኛ መልዕክቶች",
-  "Replies sent today": "ዛሬ የተላኩ ምላሾች",
   "Waiting for a reply": "ምላሽ የሚጠብቁ",
   "Open alerts": "ያልተፈቱ ማስጠንቀቂያዎች",
-  "Average reply time today": "የዛሬ አማካይ የምላሽ ጊዜ",
   "{minutes} min": "{minutes} ደቂቃ",
   "Connected accounts": "የተገናኙ አካውንቶች",
   "No Telegram account is connected yet. Follow the setup guide in docs/telegram-setup.md.":
@@ -691,6 +688,23 @@ export const am = {
   "Show analytics": "ቁጥሮቹን አሳይ",
   "Resize the chat list": "የቻቶቹን ዝርዝር ስፋት ቀይር",
   "Drag to resize. Double-click to reset.": "ስፋቱን ለመቀየር ይጎትቱ። ወደ ነበረበት ለመመለስ ሁለቴ ይጫኑ።",
+
+  // ---- የቁጥሮቹ ጊዜ፣ ቀጭኑ የቻት ራስጌ፣ የሰውየው ሚና (ገዢ/ሻጭ/ተማሪ)
+  "1 hour": "1 ሰዓት",
+  "1 day": "1 ቀን",
+  "1 week": "1 ሳምንት",
+  "1 month": "1 ወር",
+  "3 months": "3 ወር",
+  "6 months": "6 ወር",
+  "Time period": "የጊዜ ገደብ",
+  "Time period: {period}": "የጊዜ ገደብ፦ {period}",
+  "Last {period}": "ያለፈው {period}",
+  "Messages received": "የመጡ መልዕክቶች",
+  "Replies sent": "የተላኩ ምላሾች",
+  "Average reply time": "አማካይ የምላሽ ጊዜ",
+  "Replies slower than 1 hour": "ከ1 ሰዓት በላይ የዘገዩ",
+  "{hours} h": "{hours} ሰዓት",
+  "Student": "ተማሪ",
 } as const;
 
 export type MessageKey = keyof typeof am;

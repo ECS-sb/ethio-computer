@@ -20,7 +20,7 @@ export default async function AdminTelegramPage({ searchParams }: { searchParams
   const store = await cookies();
   const prefs = readLayoutPrefs((name) => store.get(name)?.value);
   const now = new Date();
-  const inbox = await getInbox(params);
+  const inbox = await getInbox(params, prefs.period);
 
   return (
     <>

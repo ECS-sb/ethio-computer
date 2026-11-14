@@ -168,6 +168,7 @@ export async function analyzeChat(chatRowId: string): Promise<boolean> {
       .map((account) => ({ ...cleanAccount(account), ...(account.details.trim() ? { details: account.details.trim().slice(0, 200) } : {}) })),
     accounts: shared.other_accounts.filter((account) => account.handle_or_link.trim()).map(cleanAccount),
     notes: shared.notes,
+    ...(result.person_role !== "OTHER" ? { role: result.person_role } : {}),
   });
   profile = { ...profile, phones: profile.phones.filter((phone) => !isCompanyPhone(phone)) };
   const withdrawal = result.topics.length > 0 || messages.some((message) => mentionsWithdrawal(message.text));

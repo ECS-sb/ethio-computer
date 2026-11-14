@@ -1,5 +1,6 @@
 import type { MessageKey } from "@/lib/messages";
 import type { AlertSeverity, AlertType } from "@/lib/telegram/detect";
+import type { PersonRole } from "@/lib/telegram/profile";
 import type { DealLike } from "@/lib/telegram/stats";
 
 export const alertLabels: Record<AlertType, MessageKey> = {
@@ -12,6 +13,12 @@ export const alertLabels: Record<AlertType, MessageKey> = {
   PAYMENT_TO_OTHER_ACCOUNT: "Payment to a non-company account",
   DUPLICATE_RECEIPT: "Receipt used twice",
   AI_SUSPICION: "AI: possible side deal",
+};
+
+export const roleLabels: Record<PersonRole, MessageKey> = {
+  BUYER: "Buyer",
+  SELLER: "Seller",
+  STUDENT: "Student",
 };
 
 export const dealKindLabels: Record<DealLike["kind"], MessageKey> = {

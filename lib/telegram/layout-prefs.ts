@@ -1,4 +1,6 @@
-// የቴሌግራም ገጹ የአቀማመጥ ምርጫዎች (ቁጥሮቹ ተደብቀዋል? የቻት ዝርዝሩ ስፋት)፤ በcookie ይታወሳሉ። ምንም database አይጠቀምም።
+// የቴሌግራም ገጹ የአቀማመጥ ምርጫዎች (ቁጥሮቹ ተደብቀዋል? የቻት ዝርዝሩ ስፋት? የቁጥሮቹ ጊዜ)፤ በcookie ይታወሳሉ። ምንም database አይጠቀምም።
+
+import { parsePeriod, PERIOD_COOKIE } from "@/lib/telegram/periods";
 
 export const STATS_COOKIE = "tg_stats";
 export const LIST_COOKIE = "tg_list";
@@ -15,6 +17,7 @@ export function readLayoutPrefs(get: (name: string) => string | undefined) {
   return {
     statsOpen: get(STATS_COOKIE) !== "hidden",
     listWidth: width ? clampListWidth(Number(width)) : LIST_DEFAULT,
+    period: parsePeriod(get(PERIOD_COOKIE)),
   };
 }
 

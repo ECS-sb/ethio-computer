@@ -1,6 +1,7 @@
 import { SearchIcon, TriangleAlertIcon } from "lucide-react";
 import { LocaleLink } from "@/components/i18n-provider";
 import { ChatAvatar } from "@/components/telegram/chat-avatar";
+import { RoleBadge } from "@/components/telegram/role-badge";
 import { Input } from "@/components/ui/input";
 import { formatPrice } from "@/lib/catalog";
 import { localePath, type T } from "@/lib/i18n";
@@ -8,7 +9,8 @@ import { getLocale, getT } from "@/lib/i18n-server";
 import { inboxQuery, type Folder, type InboxParams } from "@/lib/telegram/folders";
 import { chatListTime, isRecentlyActive } from "@/lib/telegram/format";
 import type { Inbox as InboxData } from "@/lib/telegram/inbox";
-import { alertLabels, dealStatusLabels, evidenceText, mediaLabels } from "@/lib/telegram/labels";
+import { alertLabels, dealStatusLabels, evidenceText, mediaLabels, roleLabels } from "@/lib/telegram/labels";
+import { readProfile } from "@/lib/telegram/profile";
 import { cn } from "@/lib/utils";
 
 type Chat = InboxData["chats"][number];
@@ -92,6 +94,7 @@ export async function Inbox({
             const selected = chat.id === selectedId;
             // በማስጠንቀቂያ ፎልደር ውስጥ ሲነካ በቀጥታ ወደ ጉዳዩ መልዕክት (የተሰረዘም ቢሆን) ይሄዳል።
             const alertMessage = params.folder === "alerts" ? chat.alerts[0]?.messageId : null;
+            const role = readProfile(chat.profile).role;
             return (
               <li key={chat.id}>
                 <LocaleLink
@@ -104,8 +107,11 @@ export async function Inbox({
                 >
                   <ChatAvatar name={chat.name} active={isRecentlyActive(chat.lastInboundAt, now)} />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="truncate font-semibold">{chat.name}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate font-semibold">{chat.name}</span>
+                        {role ? <RoleBadge role={role} label={t(roleLabels[role])} /> : null}
+                      </span>
                       <span className={cn("shrink-0 text-xs", selected ? "text-white/70" : "text-muted-foreground")}>{chatListTime(chat.lastMessageAt, now)}</span>
                     </div>
                     <div className="flex items-center justify-between gap-2">

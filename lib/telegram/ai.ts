@@ -36,6 +36,8 @@ export const ReceiptSchema = z.object({
 export type ReceiptResult = z.infer<typeof ReceiptSchema>;
 
 export const ChatAnalysisSchema = z.object({
+  // መጀመሪያ ሚናው ይወሰናል፣ ከዚያ ማጠቃለያው ሰውየውን በዚያ ስም (ገዢው/ሻጩ/ተማሪው) ይጠራል።
+  person_role: z.enum(["BUYER", "SELLER", "STUDENT", "OTHER"]),
   summary: z.string(),
   deals: z.array(
     z.object({
@@ -77,24 +79,26 @@ If it is, copy the fields exactly as printed. The recipient is whoever RECEIVED 
 recipient_matches_company: "yes" when the recipient name, account, merchant ID or phone matches the company details below, "no" when it clearly shows another person or account, "unclear" when you can't tell.
 If it is not a payment proof (for example a screenshot of a channel, analytics or a chat), set is_payment_receipt to false and every other field to null, with recipient_matches_company "unclear".`;
 
-const CHAT_TASK = `Task: read one chat transcript between a customer and the company staff. Messages are numbered (#1, #2, …) and marked CUSTOMER, STAFF or BOT. Payment receipts the system already read are described in brackets.
-1. deals: list each distinct sale or course registration in the chat. Don't invent deals from general questions about prices.
-   - status: NEGOTIATING (a specific item and price were discussed but not accepted), AGREED (the customer accepted a price), PAID (the customer says or shows they paid), DELIVERED (the account was handed over, access given, or the registration confirmed), CANCELLED.
+const CHAT_TASK = `Task: read one chat transcript between a person and the company staff. Messages are numbered (#1, #2, …) and marked CUSTOMER (the person), STAFF or BOT. Payment receipts the system already read are described in brackets.
+0. person_role: what the person is to the company. BUYER: they buy, or want to buy, an account, channel or service from the company (they pay the company). SELLER: they sell, or offer, their own account, channel, TikTok balance or PayPal/dollar balance to the company (the company pays them). STUDENT: they ask about or register for a course. OTHER: none of these is clear yet. If several apply, pick the main one.
+Wording for every Amharic text you write (summary, notes, reasons): call the person ገዢው, ሻጩ or ተማሪው to match person_role, or ሰውየው when it is OTHER, and call the staff ሰራተኛው. Never call the person ደንበኛ or ደንበኛው.
+1. deals: list each sale by the company to a buyer and each course registration in the chat. Don't invent deals from general questions about prices. When the company buys an account or balance from a seller, it is not a deal: put the account in customer.accounts_for_sale with the agreed price in its details.
+   - status: NEGOTIATING (a specific item and price were discussed but not accepted), AGREED (the buyer or student accepted a price), PAID (they say or show they paid), DELIVERED (the account was handed over, access given, or the registration confirmed), CANCELLED.
    - item: what was sold, short and specific (for example "YouTube channel, 12K subscribers" or "Digital marketing course").
    - amount_etb: the final agreed price in birr as an integer, or null.
    - paid_to_company: true only when a receipt or message shows the money went to a company account, false when it went somewhere else, null when unknown.
-   - customer_name and customer_phone: only when the customer gave them (common for course registrations), else null.
+   - customer_name and customer_phone: only when the person gave them (common for course registrations), else null.
    - evidence_message_numbers: the numbers of the messages that show the deal's current status.
    - note: one short line in Amharic, or "".
-2. side_deal_suspicion: does a staff member try to take the customer or the payment outside the company? Signs: a personal phone number or account (also written out in words), "pay me directly", moving the chat to another app or account, a discount for paying privately, or deleting messages right after sharing such details. suspected is false when nothing like this happens. reason is one short sentence in Amharic (or "" when not suspected); message_numbers lists the messages involved.
-3. summary: one or two sentences in Amharic about what happened in the chat.
-4. customer: details the CUSTOMER shared about themselves (not the company's or staff's details).
+2. side_deal_suspicion: does a staff member try to take the person or the payment outside the company? Signs: a personal phone number or account (also written out in words), "pay me directly", moving the chat to another app or account, a discount for paying privately, or deleting messages right after sharing such details. suspected is false when nothing like this happens. reason is one short sentence in Amharic (or "" when not suspected); message_numbers lists the messages involved.
+3. summary: one or two sentences in Amharic about what happened in the chat, using the wording above.
+4. customer: details the person (CUSTOMER) shared about themselves (not the company's or staff's details).
    - phones and emails: as written.
-   - accounts_for_sale: social media accounts or channels the customer wants to SELL to the company, with platform (YouTube, TikTok, Instagram, Telegram, Facebook, X or other), the handle or link as written, and details such as followers, subscribers, earnings or the asking price ("" if none).
-   - other_accounts: other accounts or links of the customer that are not for sale.
-   - Never copy passwords, verification or login codes, PINs or recovery codes, even when the customer sends them.
-   - notes: one short line in Amharic with other useful facts about the customer (for example city, what they need, their budget), or "".
-5. topics: TIKTOK_WITHDRAWAL when the customer asks the company to withdraw or cash out money or rewards from TikTok (or another platform) for them; PAYPAL_EXCHANGE when they want PayPal, Payoneer, dollar or other foreign balances exchanged to birr (or the reverse). An empty list when neither applies.`;
+   - accounts_for_sale: social media accounts or channels the person wants to SELL to the company, with platform (YouTube, TikTok, Instagram, Telegram, Facebook, X or other), the handle or link as written, and details such as followers, subscribers, earnings or the asking price ("" if none).
+   - other_accounts: other accounts or links of the person that are not for sale.
+   - Never copy passwords, verification or login codes, PINs or recovery codes, even when the person sends them.
+   - notes: one short line in Amharic with other useful facts about the person (for example city, what they need, their budget), or "".
+5. topics: TIKTOK_WITHDRAWAL when the person asks the company to withdraw or cash out money or rewards from TikTok (or another platform) for them; PAYPAL_EXCHANGE when they want PayPal, Payoneer, dollar or other foreign balances exchanged to birr (or the reverse). An empty list when neither applies.`;
 
 function request(task: string, company: string) {
   return {

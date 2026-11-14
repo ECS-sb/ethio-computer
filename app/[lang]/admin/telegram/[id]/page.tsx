@@ -31,7 +31,7 @@ export default async function AdminTelegramChatPage({
   const store = await cookies();
   const prefs = readLayoutPrefs((name) => store.get(name)?.value);
   const now = new Date();
-  const [chat, inbox] = await Promise.all([getTelegramChat(id), getInbox(inboxParams)]);
+  const [chat, inbox] = await Promise.all([getTelegramChat(id), getInbox(inboxParams, prefs.period)]);
   if (!chat) notFound();
 
   return (

@@ -2,8 +2,8 @@ import "server-only";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { FOLDERS, type Folder, type InboxParams } from "@/lib/telegram/folders";
+import { periodStart, type PeriodId } from "@/lib/telegram/periods";
 import { WITHDRAWAL_TAG } from "@/lib/telegram/profile";
-import { replyStats, startOfTodayInAddis } from "@/lib/telegram/stats";
 
 export const INBOX_LIMIT = 100;
 
@@ -50,13 +50,52 @@ async function waitingCounts(chatIds: string[]): Promise<Map<string, number>> {
   return new Map(rows.map((row) => [row.chatId, row.count]));
 }
 
-export async function getInbox(params: InboxParams) {
+type PeriodRow = { inbound: number; outbound: number; people: number; replies: number; averageSeconds: number | null; slowReplies: number };
+
+/**
+ * በተመረጠው ጊዜ ውስጥ የመጡና የተላኩ መልዕክቶች፣ የጻፉ ሰዎች እና የምላሽ ጊዜ (በአንድ SQL፣ ብዙ መልዕክት ቢኖርም)።
+ * የምላሽ ጊዜ፦ ደንበኛው ከሰራተኛው በኋላ (ወይም መጀመሪያ) የጻፈው መልዕክት እስከ ቀጣዩ የሰራተኛ መልዕክት ድረስ።
+ */
+async function periodStats(since: Date, account: string | null) {
+  const [row] = await db.$queryRaw<PeriodRow[]>`
+    WITH msgs AS (
+      SELECT m."chatId", m.direction, m."sentAt",
+        LAG(m.direction) OVER w AS prev_direction,
+        MIN(CASE WHEN m.direction = 'OUT' THEN m."sentAt" END) OVER (w ROWS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING) AS next_reply
+      FROM telegram_message m
+      JOIN telegram_chat c ON c.id = m."chatId"
+      WHERE m."sentAt" >= ${since} AND (${account}::text IS NULL OR c."connectionId" = ${account}::text)
+      WINDOW w AS (PARTITION BY m."chatId" ORDER BY m."sentAt", m."messageId")
+    ), waits AS (
+      SELECT EXTRACT(EPOCH FROM (next_reply - "sentAt")) AS seconds
+      FROM msgs
+      WHERE direction = 'IN' AND (prev_direction IS NULL OR prev_direction = 'OUT') AND next_reply IS NOT NULL
+    )
+    SELECT
+      (SELECT COUNT(*) FROM msgs WHERE direction = 'IN')::int AS inbound,
+      (SELECT COUNT(*) FROM msgs WHERE direction = 'OUT')::int AS outbound,
+      (SELECT COUNT(DISTINCT "chatId") FROM msgs WHERE direction = 'IN')::int AS people,
+      (SELECT COUNT(*) FROM waits)::int AS replies,
+      (SELECT AVG(seconds) FROM waits)::float8 AS "averageSeconds",
+      (SELECT COUNT(*) FROM waits WHERE seconds > 3600)::int AS "slowReplies"`;
+  return {
+    inbound: row?.inbound ?? 0,
+    outbound: row?.outbound ?? 0,
+    people: row?.people ?? 0,
+    replies: row?.replies ?? 0,
+    averageMinutes: row?.averageSeconds == null ? null : Math.max(1, Math.round(row.averageSeconds / 60)),
+    slowReplies: row?.slowReplies ?? 0,
+  };
+}
+
+export async function getInbox(params: InboxParams, period: PeriodId) {
+  const since = periodStart(period);
   const byAccount: Prisma.TelegramChatWhereInput = params.account ? { connectionId: params.account } : {};
   const bySearch: Prisma.TelegramChatWhereInput = params.q
     ? { OR: [{ name: { contains: params.q, mode: "insensitive" } }, { username: { contains: params.q, mode: "insensitive" } }] }
     : {};
 
-  const [connections, folderCounts, chats, todayMessages] = await Promise.all([
+  const [connections, folderCounts, chats, stats, periodAlerts] = await Promise.all([
     db.telegramConnection.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, ownerName: true, ownerUsername: true, isEnabled: true } }),
     Promise.all(FOLDERS.map((folder) => db.telegramChat.count({ where: { AND: [byAccount, folderWhere(folder)] } }))),
     db.telegramChat.findMany({
@@ -70,6 +109,7 @@ export async function getInbox(params: InboxParams) {
         lastMessageAt: true,
         lastDirection: true,
         lastInboundAt: true,
+        profile: true,
         connection: { select: { ownerName: true } },
         messages: { orderBy: [{ sentAt: "desc" }, { messageId: "desc" }], take: 1, select: { text: true, mediaType: true, direction: true, deletedAt: true } },
         deals: { orderBy: { dealAt: "desc" }, take: 1, select: { kind: true, status: true, amountEtb: true, item: true, paidToCompany: true } },
@@ -77,11 +117,8 @@ export async function getInbox(params: InboxParams) {
         _count: { select: { alerts: { where: { resolved: false } } } },
       },
     }),
-    db.telegramMessage.findMany({
-      where: { sentAt: { gte: startOfTodayInAddis() }, ...(params.account ? { chat: { connectionId: params.account } } : {}) },
-      orderBy: { sentAt: "asc" },
-      select: { chatId: true, direction: true, sentAt: true },
-    }),
+    periodStats(since, params.account || null),
+    db.telegramAlert.count({ where: { createdAt: { gte: since }, ...(params.account ? { chat: { connectionId: params.account } } : {}) } }),
   ]);
 
   const waiting = await waitingCounts(chats.map((chat) => chat.id));
@@ -92,11 +129,7 @@ export async function getInbox(params: InboxParams) {
     counts,
     chats: chats.map((chat) => ({ ...chat, waitingCount: waiting.get(chat.id) ?? 0 })),
     truncated: chats.length === INBOX_LIMIT,
-    today: {
-      inbound: todayMessages.filter((message) => message.direction === "IN").length,
-      outbound: todayMessages.filter((message) => message.direction === "OUT").length,
-      replies: replyStats(todayMessages),
-    },
+    period: { id: period, ...stats, alerts: periodAlerts },
   };
 }
 
