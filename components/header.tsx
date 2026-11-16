@@ -15,7 +15,7 @@ async function HeaderAuth() {
   const user = await getCurrentUser();
   if (!user || user.suspended) {
     return (
-      <LocaleLink href="/login" className={buttonVariants()}>
+      <LocaleLink href="/login" className={buttonVariants({ className: "rounded-full px-4 sm:px-6" })}>
         {t("Sign in")}
       </LocaleLink>
     );

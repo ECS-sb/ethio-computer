@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Form from "next/form";
+import { usePathname } from "next/navigation";
 import { MenuIcon, SearchIcon } from "lucide-react";
 import { useCompare } from "@/components/compare-store";
 import { LocaleLink, useLocale, useT } from "@/components/i18n-provider";
@@ -15,7 +16,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { localePath, type MessageKey } from "@/lib/i18n";
+import { localePath, stripLocale, type MessageKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const links: { href: string; label: MessageKey }[] = [
@@ -45,39 +46,51 @@ export function SiteHeader({
   const t = useT();
   const locale = useLocale();
   const searchAction = localePath(locale, "/accounts");
+  const pathname = stripLocale(usePathname());
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 py-4 sm:gap-6 sm:px-6">
+    // ተንሳፋፊ የመስታወት header፦ ብራንድ በግራ፣ ምናሌው በመሃል፣ ቁልፎቹ በቀኝ።
+    <header className="sticky top-0 z-40 px-2 pt-2 sm:px-6 sm:pt-4">
+      <div className="relative mx-auto grid w-full max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-2 rounded-full bg-card/55 py-2 pr-2 pl-3 shadow-2xl shadow-black/40 ring-1 ring-foreground/10 backdrop-blur-2xl backdrop-saturate-150 before:pointer-events-none before:absolute before:inset-x-12 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-primary/50 before:to-transparent sm:gap-4 sm:pl-4">
         {brand}
 
-        <nav aria-label={t("Main")} className="hidden items-center gap-6 lg:flex">
-          {links.map((link) => (
-            <LocaleLink
-              key={link.href}
-              href={link.href}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {t(link.label)}
-            </LocaleLink>
-          ))}
+        <nav aria-label={t("Main")} className="hidden items-center gap-1 justify-self-center rounded-full bg-background/50 p-1 ring-1 ring-foreground/10 lg:flex">
+          {links.map((link) => {
+            const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+            return (
+              <LocaleLink
+                key={link.href}
+                href={link.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                  active ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
+                )}
+              >
+                {t(link.label)}
+              </LocaleLink>
+            );
+          })}
         </nav>
 
-        <Form action={searchAction} role="search" className="relative ml-auto hidden w-56 xl:block">
-          <SearchIcon className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input name="q" aria-label={t("Search accounts")} placeholder={t("Search accounts…")} className="pl-10" />
-        </Form>
-
-        <div className="ml-auto flex items-center gap-2 xl:ml-0">
+        <div className="col-start-3 flex items-center gap-2">
+          <LocaleLink
+            href="/accounts"
+            aria-label={t("Search accounts")}
+            title={t("Search accounts")}
+            className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "hidden size-10 rounded-full sm:inline-flex")}
+          >
+            <SearchIcon />
+          </LocaleLink>
           {languageSlot}
-          <LocaleLink href="/compare" className={cn(buttonVariants({ variant: "ghost" }), "hidden sm:inline-flex")}>
+          <LocaleLink href="/compare" className={cn(buttonVariants({ variant: "ghost" }), "hidden rounded-full xl:inline-flex")}>
             {t("Compare")}
             {ids.length > 0 ? <Badge>{ids.length}</Badge> : null}
           </LocaleLink>
           {authSlot}
 
           <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger render={<Button variant="outline" size="icon" aria-label={t("Open menu")} className="size-10 lg:hidden" />}>
+            <SheetTrigger render={<Button variant="outline" size="icon" aria-label={t("Open menu")} className="size-10 rounded-full lg:hidden" />}>
               <MenuIcon />
             </SheetTrigger>
             <SheetContent side="right">
