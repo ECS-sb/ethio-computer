@@ -31,13 +31,13 @@ export async function PlatformOrbit({ title, highlight }: { title: string; highl
       <svg aria-hidden viewBox="0 0 200 100" className="absolute inset-0 size-full overflow-visible">
         <defs>
           <linearGradient id="orbit-arc" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor="#FFBE1A" stopOpacity="0" />
-            <stop offset="0.5" stopColor="#FFBE1A" stopOpacity="0.7" />
-            <stop offset="1" stopColor="#FFAA33" stopOpacity="0" />
+            <stop offset="0" style={{ stopColor: "var(--primary)" }} stopOpacity="0" />
+            <stop offset="0.5" style={{ stopColor: "var(--primary)" }} stopOpacity="0.7" />
+            <stop offset="1" style={{ stopColor: "var(--gold-2)" }} stopOpacity="0" />
           </linearGradient>
           <linearGradient id="orbit-title-gold" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor="#FFBE1A" />
-            <stop offset="1" stopColor="#FFAA33" />
+            <stop offset="0" style={{ stopColor: "var(--primary)" }} />
+            <stop offset="1" style={{ stopColor: "var(--gold-2)" }} />
           </linearGradient>
           {/* ርዕሱ የሚጻፍበት ቅስት (በውጪው ቅስትና በመሃሉ ሎጎ መካከል) */}
           <path id="orbit-title-path" d="M36.6 70.4 A70 70 0 0 1 163.4 70.4" />

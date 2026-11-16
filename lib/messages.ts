@@ -994,6 +994,9 @@ export const am = {
   "Follow Ethio Computer School": "Ethio Computer Schoolን ይከተሉ",
   "Website": "ድረ-ገጽ",
   "Browsing is free. You'll create an account with Gmail only when you buy or message the seller.": "ማየት ነፃ ነው። በGmail አካውንት የሚፈጥሩት ሲገዙ ወይም ሻጩን ሲያናግሩ ብቻ ነው።",
+  "Switch light or dark mode": "ብሩህ ወይም ጨለማ ገጽታ ቀይር",
+  "Light mode": "ብሩህ ገጽታ",
+  "Dark mode": "ጨለማ ገጽታ",
 } as const;
 
 export type MessageKey = keyof typeof am;

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, JetBrains_Mono, Noto_Sans_Ethiopic, Plus_Jakarta_Sans } from "next/font/google";
 import { I18nProvider } from "@/components/i18n-provider";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { locales } from "@/lib/i18n";
 import { getLocale, getT } from "@/lib/i18n-server";
@@ -43,13 +44,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html
       lang={locale}
-      className={`dark scheme-dark ${plusJakarta.variable} ${dmSans.variable} ${notoSansEthiopic.variable} ${jetBrainsMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`dark ${plusJakarta.variable} ${dmSans.variable} ${notoSansEthiopic.variable} ${jetBrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <I18nProvider locale={locale}>
-          {children}
-          <Toaster theme="dark" position="bottom-right" />
-        </I18nProvider>
+        <ThemeProvider>
+          <I18nProvider locale={locale}>
+            {children}
+            <Toaster position="bottom-right" />
+          </I18nProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

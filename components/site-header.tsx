@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useCompare } from "@/components/compare-store";
 import { LocaleLink, useLocale, useT } from "@/components/i18n-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,6 +145,7 @@ export function SiteHeader({
           >
             <SearchIcon />
           </LocaleLink>
+          <ThemeToggle className="hidden sm:inline-flex" />
           {languageSlot}
           <LocaleLink href="/compare" className={cn(buttonVariants({ variant: "ghost" }), "hidden rounded-full xl:inline-flex")}>
             {t("Compare")}
@@ -181,7 +183,8 @@ export function SiteHeader({
                   <ActiveMobileLinks compareCount={ids.length} onNavigate={() => setOpen(false)} />
                 </Suspense>
               </nav>
-              <div className="relative border-t border-foreground/10 p-4">
+              <div className="relative flex flex-col gap-2 border-t border-foreground/10 p-4">
+                <ThemeToggle withLabel className="w-full bg-background/40 sm:hidden" />
                 <LocaleLink
                   href="/sell"
                   onClick={() => setOpen(false)}
