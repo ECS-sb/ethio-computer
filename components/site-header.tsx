@@ -1,9 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Form from "next/form";
 import { usePathname } from "next/navigation";
-import { MenuIcon, SearchIcon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  CircleHelpIcon,
+  GitCompareArrowsIcon,
+  LayoutDashboardIcon,
+  MenuIcon,
+  RouteIcon,
+  SearchIcon,
+  StoreIcon,
+  TagIcon,
+  UsersIcon,
+  type LucideIcon,
+} from "lucide-react";
 import { useCompare } from "@/components/compare-store";
 import { LocaleLink, useLocale, useT } from "@/components/i18n-provider";
 import { Badge } from "@/components/ui/badge";
@@ -19,18 +31,82 @@ import {
 import { localePath, stripLocale, type MessageKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const links: { href: string; label: MessageKey }[] = [
-  { href: "/accounts", label: "Market" },
-  { href: "/sell", label: "Sell" },
-  { href: "/how-it-works", label: "How it works" },
-  { href: "/sellers", label: "Sellers" },
-  { href: "/faq", label: "FAQ" },
+type NavLink = { href: string; label: MessageKey; icon: LucideIcon };
+
+const links: NavLink[] = [
+  { href: "/accounts", label: "Market", icon: StoreIcon },
+  { href: "/sell", label: "Sell", icon: TagIcon },
+  { href: "/how-it-works", label: "How it works", icon: RouteIcon },
+  { href: "/sellers", label: "Sellers", icon: UsersIcon },
+  { href: "/faq", label: "FAQ", icon: CircleHelpIcon },
 ];
 
-const mobileExtras: { href: string; label: MessageKey }[] = [
-  { href: "/compare", label: "Compare" },
-  { href: "/dashboard", label: "Dashboard" },
+const mobileExtras: NavLink[] = [
+  { href: "/compare", label: "Compare", icon: GitCompareArrowsIcon },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
 ];
+
+const isActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
+
+function DesktopLinks({ pathname }: { pathname: string }) {
+  const t = useT();
+  return links.map((link) => {
+    const active = isActive(pathname, link.href);
+    return (
+      <LocaleLink
+        key={link.href}
+        href={link.href}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+          active ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
+        )}
+      >
+        {t(link.label)}
+      </LocaleLink>
+    );
+  });
+}
+
+function ActiveDesktopLinks() {
+  return <DesktopLinks pathname={stripLocale(usePathname())} />;
+}
+
+type MobileLinksProps = { pathname: string; compareCount: number; onNavigate: () => void };
+
+function MobileLinks({ pathname, compareCount, onNavigate }: MobileLinksProps) {
+  const t = useT();
+  return [...links, ...mobileExtras].map((link) => {
+    const active = isActive(pathname, link.href);
+    return (
+      <LocaleLink
+        key={link.href}
+        href={link.href}
+        onClick={onNavigate}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "group flex items-center gap-4 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
+          active ? "bg-primary/15 text-primary ring-1 ring-primary/30" : "hover:bg-foreground/10"
+        )}
+      >
+        <span
+          className={cn(
+            "flex size-9 items-center justify-center rounded-xl ring-1 transition-colors",
+            active ? "bg-primary text-primary-foreground ring-primary" : "bg-background/40 text-muted-foreground ring-foreground/10 group-hover:text-foreground"
+          )}
+        >
+          <link.icon className="size-4" />
+        </span>
+        {t(link.label)}
+        {link.href === "/compare" && compareCount > 0 ? <Badge className="ml-auto">{compareCount}</Badge> : null}
+      </LocaleLink>
+    );
+  });
+}
+
+function ActiveMobileLinks(props: Omit<MobileLinksProps, "pathname">) {
+  return <MobileLinks pathname={stripLocale(usePathname())} {...props} />;
+}
 
 export function SiteHeader({
   brand,
@@ -46,7 +122,6 @@ export function SiteHeader({
   const t = useT();
   const locale = useLocale();
   const searchAction = localePath(locale, "/accounts");
-  const pathname = stripLocale(usePathname());
 
   return (
     // ተንሳፋፊ የመስታወት header፦ ብራንድ በግራ፣ ምናሌው በመሃል፣ ቁልፎቹ በቀኝ።
@@ -55,22 +130,9 @@ export function SiteHeader({
         {brand}
 
         <nav aria-label={t("Main")} className="hidden items-center gap-1 justify-self-center rounded-full bg-background/50 p-1 ring-1 ring-foreground/10 lg:flex">
-          {links.map((link) => {
-            const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
-            return (
-              <LocaleLink
-                key={link.href}
-                href={link.href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                  active ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
-                )}
-              >
-                {t(link.label)}
-              </LocaleLink>
-            );
-          })}
+          <Suspense fallback={<DesktopLinks pathname="" />}>
+            <ActiveDesktopLinks />
+          </Suspense>
         </nav>
 
         <div className="col-start-3 flex items-center gap-2">
@@ -93,25 +155,42 @@ export function SiteHeader({
             <SheetTrigger render={<Button variant="outline" size="icon" aria-label={t("Open menu")} className="size-10 rounded-full lg:hidden" />}>
               <MenuIcon />
             </SheetTrigger>
-            <SheetContent side="right">
-              <SheetHeader>
-                <SheetTitle>{t("Menu")}</SheetTitle>
+            {/* ተንሳፋፊ የመስታወት ምናሌ፦ ከጀርባው ያለው ገጽ በብዥታ ይታያል፣ ወርቃማ ብርሃን አለው። */}
+            <SheetContent
+              side="right"
+              className="data-[side=right]:inset-y-2! data-[side=right]:right-2! data-[side=right]:h-auto! data-[side=right]:w-[calc(100%-1rem)]! overflow-hidden rounded-xl border-0! bg-card/45 shadow-2xl shadow-black/60 ring-1 ring-foreground/15 backdrop-blur-2xl backdrop-saturate-150 sm:max-w-sm"
+            >
+              <div aria-hidden className="pointer-events-none absolute -top-24 -right-20 size-64 rounded-full bg-primary/25 blur-3xl" />
+              <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-16 size-56 rounded-full bg-gold-2/15 blur-3xl" />
+              <div aria-hidden className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-primary/60 to-transparent" />
+
+              <SheetHeader className="relative">
+                <SheetTitle className="font-heading text-lg">{t("Menu")}</SheetTitle>
               </SheetHeader>
-              <nav aria-label={t("Mobile")} className="flex flex-col gap-2 px-4 pb-6">
-                <Form action={searchAction} role="search" className="pb-2" onSubmit={() => setOpen(false)}>
-                  <Input name="q" aria-label={t("Search accounts")} placeholder={t("Search accounts…")} />
+              <nav aria-label={t("Mobile")} className="relative flex flex-1 flex-col gap-1 overflow-y-auto px-4 pb-4">
+                <Form action={searchAction} role="search" className="relative pb-4" onSubmit={() => setOpen(false)}>
+                  <SearchIcon className="pointer-events-none absolute top-[calc(50%-0.5rem)] left-4 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    name="q"
+                    aria-label={t("Search accounts")}
+                    placeholder={t("Search accounts…")}
+                    className="h-12 rounded-full bg-background/40 pl-11 ring-1 ring-foreground/10 backdrop-blur-sm"
+                  />
                 </Form>
-                {[...links, ...mobileExtras].map((link) => (
-                  <LocaleLink
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setOpen(false)}
-                    className="rounded-xl px-4 py-3 text-sm transition-colors hover:bg-muted"
-                  >
-                    {t(link.label)}
-                  </LocaleLink>
-                ))}
+                <Suspense fallback={<MobileLinks pathname="" compareCount={ids.length} onNavigate={() => setOpen(false)} />}>
+                  <ActiveMobileLinks compareCount={ids.length} onNavigate={() => setOpen(false)} />
+                </Suspense>
               </nav>
+              <div className="relative border-t border-foreground/10 p-4">
+                <LocaleLink
+                  href="/sell"
+                  onClick={() => setOpen(false)}
+                  className={cn(buttonVariants({ size: "lg" }), "w-full rounded-full bg-linear-to-r from-primary to-gold-2 shadow-lg shadow-primary/25")}
+                >
+                  {t("Sell an account")}
+                  <ArrowRightIcon data-icon="inline-end" />
+                </LocaleLink>
+              </div>
             </SheetContent>
           </Sheet>
         </div>
