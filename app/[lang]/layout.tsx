@@ -34,7 +34,7 @@ export function generateStaticParams() {
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
   return {
-    title: { default: "Ethio Market", template: "%s | Ethio Market" },
+    title: { default: "Ethio Computer", template: "%s | Ethio Computer" },
     description: t("The marketplace for social media accounts"),
   };
 }

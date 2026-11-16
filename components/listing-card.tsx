@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { BadgeCheckIcon } from "lucide-react";
 import { PlatformMark } from "@/components/brand";
-import { CompareToggle } from "@/components/compare-toggle";
 import { LocaleLink } from "@/components/i18n-provider";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -79,7 +78,6 @@ export async function ListingCard({ listing }: { listing: PublicListing }) {
         >
           {t("Details")}
         </LocaleLink>
-        {sold ? null : <CompareToggle id={listing.id} />}
       </CardFooter>
     </Card>
   );

@@ -54,7 +54,7 @@ export default async function BuyerOrdersPage() {
                       </LocaleLink>
                     </div>
                   )}
-                  <p className="text-xs text-muted-foreground">{t("The money is held by Ethio Market and reaches the seller only after you confirm the handover.")}</p>
+                  <p className="text-xs text-muted-foreground">{t("The money is held by Ethio Computer and reaches the seller only after you confirm the handover.")}</p>
                 </div>
               ) : null}
               {order.status === "PAID" || order.status === "TRANSFERRED" ? (

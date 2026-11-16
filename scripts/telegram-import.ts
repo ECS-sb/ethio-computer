@@ -145,7 +145,7 @@ async function main() {
   const owners = (await pool.query(`SELECT "ownerUsername" FROM telegram_connection WHERE "ownerUsername" IS NOT NULL`)).rows as { ownerUsername: string }[];
   for (const { ownerUsername } of owners) allow.usernames.add(ownerUsername.toLowerCase());
   const listed = new Set(((await pool.query(`SELECT username FROM listing`)).rows as { username: string }[]).map((row) => row.username.toLowerCase()));
-  // ሰራተኛ የላከው መልዕክት ውስጥ የሽሽጥ ምልክቶች (ለሽያጭ የቀረቡ የEthio Market አካውንቶች ሊንክ አይቆጠርም)
+  // ሰራተኛ የላከው መልዕክት ውስጥ የሽሽጥ ምልክቶች (ለሽያጭ የቀረቡ የEthio Computer አካውንቶች ሊንክ አይቆጠርም)
   const findingsFor = (row: Row): Finding[] =>
     detectSideDeal(row.scanText, allow, { contactPhone: row.contactPhone }).filter((finding) => {
       if (finding.type !== "TELEGRAM_CONTACT") return true;

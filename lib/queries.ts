@@ -183,14 +183,6 @@ export async function getSimilarListings(listing: PublicListing, take = 3) {
   return rows.map(toPublic);
 }
 
-export async function getListingsByIds(ids: string[]) {
-  const rows = await db.listing.findMany({
-    where: { id: { in: ids }, status: { in: PUBLIC_STATUSES } },
-    select: publicSelect,
-  });
-  return rows.map(toPublic);
-}
-
 export async function getSoldListings(take = 24) {
   const rows = await db.listing.findMany({ where: { status: "SOLD" }, select: publicSelect, orderBy: { updatedAt: "desc" }, take });
   return rows.map(toPublic);

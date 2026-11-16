@@ -321,7 +321,7 @@ export const am = {
   Accountability: "ተጠያቂነት",
   "Sellers prove ownership, and their history is visible to buyers.": "ሻጮች ባለቤትነታቸውን ያረጋግጣሉ፣ ታሪካቸውም ለገዢዎች ይታያል።",
   Why: "ለምን",
-  "Ethio Market is a marketplace for buying and selling social media accounts.": "Ethio Market የሶሻል ሚዲያ አካውንቶችን ለመግዛት እና ለመሸጥ የሚያስችል ገበያ ነው።",
+  "Ethio Computer is a marketplace for buying and selling social media accounts.": "Ethio Computer የሶሻል ሚዲያ አካውንቶችን ለመግዛት እና ለመሸጥ የሚያስችል ገበያ ነው።",
   "How can we": "እንዴት",
   "help?": "እንርዳዎት?",
   "Write to us with your question.": "ጥያቄዎን ይጻፉልን።",
@@ -813,7 +813,7 @@ export const am = {
   "Buyer not marked as paid. Click again to send.": "ገዢው እንደከፈለ አልተመዘገበም። ለመላክ እንደገና ይጫኑ።",
 
   // ---- የመነሻ ገጽ
-  "Why Ethio Market": "ለምን Ethio Market",
+  "Why Ethio Computer": "ለምን Ethio Computer",
   "Trusted sellers": "የታመኑ ሻጮች",
 
   // ---- የሊስቲንግ AI ግምገማ
@@ -894,14 +894,14 @@ export const am = {
   "Rejected. The money was returned to the wallet.": "ተከልክሏል። ገንዘቡ ወደ ዋሌቱ ተመልሷል።",
   "Pay {amount} from wallet": "{amount} ከዋሌት ክፈል",
   "Add {amount} to your wallet to pay.": "ለመክፈል {amount} ዋሌትዎ ላይ ያስገቡ።",
-  "The money is held by Ethio Market and reaches the seller only after you confirm the handover.": "ገንዘቡ በEthio Market ይያዛል፤ ለሻጩ የሚደርሰው ርክክቡን ካረጋገጡ በኋላ ብቻ ነው።",
+  "The money is held by Ethio Computer and reaches the seller only after you confirm the handover.": "ገንዘቡ በEthio Computer ይያዛል፤ ለሻጩ የሚደርሰው ርክክቡን ካረጋገጡ በኋላ ብቻ ነው።",
   "Paid from your wallet. The money is held until the handover is complete.": "ከዋሌትዎ ተከፍሏል። ርክክቡ እስኪጠናቀቅ ገንዘቡ ይያዛል።",
   "Waiting for the buyer to pay from their wallet.": "ገዢው ከዋሌቱ እስኪከፍል እየተጠበቀ ነው።",
   "{amount} was added to your wallet.": "{amount} ወደ ዋሌትዎ ገብቷል።",
   "Agent handed the account to the buyer": "ኤጀንቱ አካውንቱን ለገዢው አስረክቧል",
   "Fee {percent}%: {fee} · Seller gets {payout}": "ክፍያ {percent}%፦ {fee} · ሻጩ የሚያገኘው {payout}",
   "Complete it ourselves": "በራሳችን እንጨርሳለን",
-  "Through Ethio Market's agent": "በEthio Market ኤጀንት በኩል",
+  "Through Ethio Computer's agent": "በEthio Computer ኤጀንት በኩል",
   "Buyer and seller do the handover themselves through the site.": "ገዢና ሻጭ ርክክቡን በሳይቱ በኩል በራሳቸው ያደርጋሉ።",
   "Our agent takes the account from the seller, checks it and hands it to the buyer.": "ኤጀንታችን አካውንቱን ከሻጩ ተቀብሎ፣ አረጋግጦ ለገዢው ያስረክባል።",
   "{percent}% fee, paid by the seller": "{percent}% ክፍያ፣ ሻጩ ይከፍላል",
@@ -920,7 +920,7 @@ export const am = {
   "Verified sellers get a badge, appear first in the market and sell faster, because buyers trust them more. You verify with your phone, Fayda ID or passport, and a bank account in the same name.": "የተረጋገጡ ሻጮች ባጅ ያገኛሉ፣ በገበያው ላይ መጀመሪያ ይታያሉ፣ ገዢዎች ስለሚያምኗቸውም ቶሎ ይሸጣሉ። ማረጋገጫው በስልክዎ፣ በፋይዳ ወይም በፓስፖርት እና በተመሳሳይ ስም ባለ የባንክ ሂሳብ ነው።",
   "Can we share phone numbers or usernames in chat?": "ቻት ላይ ስልክ ቁጥር ወይም username መለዋወጥ እንችላለን?",
   "No. Messages with phone numbers, usernames, links or other apps are not delivered. After the third attempt the account is suspended automatically.": "አይቻልም። ስልክ ቁጥር፣ username፣ ሊንክ ወይም ሌላ መተግበሪያ ያለው መልዕክት አይደርስም። በ3ኛው ሙከራ አካውንቱ በራሱ ይታገዳል።",
-  "Keep the whole deal on Ethio Market. Messages with phone numbers, usernames, links, emails or other apps are not delivered, and the third attempt suspends your account automatically.": "ስምምነቱን በሙሉ በEthio Market ላይ ያድርጉ። ስልክ ቁጥር፣ username፣ ሊንክ፣ ኢሜይል ወይም ሌላ መተግበሪያ ያለው መልዕክት አይደርስም፤ በ3ኛው ሙከራ አካውንትዎ በራሱ ይታገዳል።",
+  "Keep the whole deal on Ethio Computer. Messages with phone numbers, usernames, links, emails or other apps are not delivered, and the third attempt suspends your account automatically.": "ስምምነቱን በሙሉ በEthio Computer ላይ ያድርጉ። ስልክ ቁጥር፣ username፣ ሊንክ፣ ኢሜይል ወይም ሌላ መተግበሪያ ያለው መልዕክት አይደርስም፤ በ3ኛው ሙከራ አካውንትዎ በራሱ ይታገዳል።",
   "Your warnings: {count} of {max}.": "ማስጠንቀቂያዎችዎ፦ {count} ከ{max}።",
   "Not delivered. Phone numbers, usernames, links and other apps aren't allowed here. Warning 1 of 3: on the third, your account is suspended.": "መልዕክቱ አልደረሰም። ስልክ ቁጥር፣ username፣ ሊንክና ሌላ መተግበሪያ እዚህ አይፈቀዱም። ማስጠንቀቂያ 1 ከ3፦ በ3ኛው አካውንትዎ ይታገዳል።",
   "Not delivered. Phone numbers, usernames, links and other apps aren't allowed here. Warning 2 of 3: next time, your account is suspended.": "መልዕክቱ አልደረሰም። ስልክ ቁጥር፣ username፣ ሊንክና ሌላ መተግበሪያ እዚህ አይፈቀዱም። ማስጠንቀቂያ 2 ከ3፦ በሚቀጥለው ጊዜ አካውንትዎ ይታገዳል።",

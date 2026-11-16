@@ -82,7 +82,7 @@ async function loadAllowlist() {
   return allow;
 }
 
-/** ለሽያጭ የቀረቡ አካውንቶች (Ethio Market listings) ሊንክ ሲላክ ማስጠንቀቂያ አይሆንም። */
+/** ለሽያጭ የቀረቡ አካውንቶች (Ethio Computer listings) ሊንክ ሲላክ ማስጠንቀቂያ አይሆንም። */
 async function dropListedAccounts(findings: Finding[]): Promise<Finding[]> {
   const usernames = findings
     .filter((finding) => finding.type === "TELEGRAM_CONTACT")

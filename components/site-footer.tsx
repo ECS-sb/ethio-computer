@@ -121,7 +121,7 @@ export async function SiteFooter() {
         ))}
       </div>
       <div className="mx-auto w-full max-w-7xl border-t border-border px-6 py-6">
-        <p className="text-xs text-muted-foreground">© Ethio Market</p>
+        <p className="text-xs text-muted-foreground">© Ethio Computer</p>
       </div>
     </footer>
   );

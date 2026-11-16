@@ -2,7 +2,7 @@
 //   npx tsx scripts/seed-samples.ts                 → ሙከራ ብቻ፤ ምስሎቹን ወደ .samples-preview/ ይጽፋል፣ ዳታቤዙን አይነካም
 //   npx tsx scripts/seed-samples.ts --apply         → ዳታቤዙ ላይ ያስገባል (በ.env.local ያለው DATABASE_URL)
 //   npx tsx scripts/seed-samples.ts --remove        → ያስገባቸውን ናሙናዎች ያጠፋል
-// ናሙናዎቹ በአንድ "Ethio Market Samples" ሻጭ ስር ይገባሉ፤ መግለጫቸው ናሙና መሆናቸውን ይናገራል።
+// ናሙናዎቹ በአንድ "Ethio Computer Samples" ሻጭ ስር ይገባሉ፤ መግለጫቸው ናሙና መሆናቸውን ይናገራል።
 
 import { randomInt } from "node:crypto";
 import fs from "node:fs";
@@ -16,7 +16,7 @@ import { PrismaClient } from "@/lib/generated/prisma/client";
 config({ path: ".env.local", quiet: true });
 config({ path: ".env", quiet: true });
 
-const SAMPLE_SELLER = { id: "sample-seller", email: "samples@ethiomarket.test", name: "Ethio Market Samples" };
+const SAMPLE_SELLER = { id: "sample-seller", email: "samples@ethiomarket.test", name: "Ethio Computer Samples" };
 const NOTE = "Sample listing for testing — not a real account.\nለሙከራ የቀረበ ናሙና ነው፤ እውነተኛ አካውንት አይደለም።";
 
 type Sample = {
@@ -104,7 +104,7 @@ function screenshotSvg(sample: Sample, variant: number): string {
     ${tiles}
     <text x="60" y="910" fill="#9a9a9a" font-size="30" font-family="Arial, sans-serif">Growth</text>
     ${chart}
-    <text x="450" y="1360" text-anchor="middle" fill="#ffbe1a" font-size="34" font-weight="700" font-family="Arial, sans-serif" opacity="0.9">SAMPLE · ETHIO MARKET</text>
+    <text x="450" y="1360" text-anchor="middle" fill="#ffbe1a" font-size="34" font-weight="700" font-family="Arial, sans-serif" opacity="0.9">SAMPLE · ETHIO COMPUTER</text>
   </svg>`;
 }
 

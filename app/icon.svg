@@ -4,7 +4,7 @@
   width="512"
   xmlns="http://www.w3.org/2000/svg"
 >
-  <title>Ethio Market</title>
+  <title>Ethio Computer</title>
   <!-- App icon and favicon: navy #0A1329 tile, the gold #FFBE1A monitor-with-arrow logo mark (LogoMark in packages/ui/src/brand/logo.tsx, the same paths). -->
   <rect fill="#0A1329" height="512" rx="112" width="512" />
   <path

@@ -24,6 +24,9 @@ const nextConfig: NextConfig = {
       { source: "/forgot-password", destination: "/login", permanent: false },
       { source: "/am/register", destination: "/am/login", permanent: false },
       { source: "/am/forgot-password", destination: "/am/login", permanent: false },
+      // የማወዳደሪያ ገጹ ተወግዷል፤ የቆዩ ሊንኮች ወደ ገበያው ይሄዳሉ።
+      { source: "/compare", destination: "/accounts", permanent: true },
+      { source: "/am/compare", destination: "/am/accounts", permanent: true },
     ];
   },
 };

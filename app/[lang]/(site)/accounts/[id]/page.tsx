@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { ArrowLeftIcon, BadgeCheckIcon, MessageCircleIcon, UserPlusIcon } from "lucide-react";
-import { CompareToggle } from "@/components/compare-toggle";
 import { PlatformMark } from "@/components/brand";
 import { LocaleLink } from "@/components/i18n-provider";
 import { ListingActions } from "@/components/listing-actions";
@@ -202,7 +201,6 @@ async function ListingContent({ params }: Props) {
                     <MessageCircleIcon data-icon="inline-start" />
                     {t("Message the seller")}
                   </LocaleLink>
-                  <CompareToggle id={listing.id} />
                   <p className="flex items-start gap-2 pt-2 text-xs text-muted-foreground">
                     <UserPlusIcon className="mt-0.5 size-4 shrink-0 text-primary" />
                     {t("Browsing is free. You'll create an account with Gmail only when you buy or message the seller.")}

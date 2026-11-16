@@ -58,7 +58,7 @@ export async function PlatformOrbit({ title, highlight }: { title: string; highl
         </text>
       </svg>
 
-      {/* መሃሉ፦ የEthio Market ሎጎ ከወርቃማ ብርሃን ጋር */}
+      {/* መሃሉ፦ የEthio Computer ሎጎ ከወርቃማ ብርሃን ጋር */}
       <LocaleLink
         href="/accounts"
         aria-label={t("Go to the market")}

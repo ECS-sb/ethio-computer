@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 
 export function Brand({ className }: { className?: string }) {
   return (
-    <LocaleLink href="/" aria-label="Ethio Market" className={cn("flex items-center gap-2", className)}>
+    <LocaleLink href="/" aria-label="Ethio Computer" className={cn("flex items-center gap-2", className)}>
       <Image src="/brand/logo-mark.svg" alt="" width={40} height={40} className="size-10" />
       <span className="flex flex-col leading-none">
         <span className="font-heading text-xl font-extrabold tracking-tight text-primary">Ethio</span>
-        <span className="text-xs font-semibold tracking-wide">MARKET</span>
+        <span className="text-xs font-semibold tracking-wide">COMPUTER</span>
       </span>
     </LocaleLink>
   );

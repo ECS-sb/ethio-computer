@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   ArrowRightIcon,
   CircleHelpIcon,
-  GitCompareArrowsIcon,
   LayoutDashboardIcon,
   MenuIcon,
   RouteIcon,
@@ -16,10 +15,8 @@ import {
   UsersIcon,
   type LucideIcon,
 } from "lucide-react";
-import { useCompare } from "@/components/compare-store";
 import { LocaleLink, useLocale, useT } from "@/components/i18n-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -43,7 +40,6 @@ const links: NavLink[] = [
 ];
 
 const mobileExtras: NavLink[] = [
-  { href: "/compare", label: "Compare", icon: GitCompareArrowsIcon },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
 ];
 
@@ -73,9 +69,9 @@ function ActiveDesktopLinks() {
   return <DesktopLinks pathname={stripLocale(usePathname())} />;
 }
 
-type MobileLinksProps = { pathname: string; compareCount: number; onNavigate: () => void };
+type MobileLinksProps = { pathname: string; onNavigate: () => void };
 
-function MobileLinks({ pathname, compareCount, onNavigate }: MobileLinksProps) {
+function MobileLinks({ pathname, onNavigate }: MobileLinksProps) {
   const t = useT();
   return [...links, ...mobileExtras].map((link) => {
     const active = isActive(pathname, link.href);
@@ -99,7 +95,6 @@ function MobileLinks({ pathname, compareCount, onNavigate }: MobileLinksProps) {
           <link.icon className="size-4" />
         </span>
         {t(link.label)}
-        {link.href === "/compare" && compareCount > 0 ? <Badge className="ml-auto">{compareCount}</Badge> : null}
       </LocaleLink>
     );
   });
@@ -119,7 +114,6 @@ export function SiteHeader({
   authSlot: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const { ids } = useCompare();
   const t = useT();
   const locale = useLocale();
   const searchAction = localePath(locale, "/accounts");
@@ -147,10 +141,6 @@ export function SiteHeader({
           </LocaleLink>
           <ThemeToggle className="hidden sm:inline-flex" />
           {languageSlot}
-          <LocaleLink href="/compare" className={cn(buttonVariants({ variant: "ghost" }), "hidden rounded-full xl:inline-flex")}>
-            {t("Compare")}
-            {ids.length > 0 ? <Badge>{ids.length}</Badge> : null}
-          </LocaleLink>
           {authSlot}
 
           <Sheet open={open} onOpenChange={setOpen}>
@@ -179,8 +169,8 @@ export function SiteHeader({
                     className="h-12 rounded-full bg-background/40 pl-11 ring-1 ring-foreground/10 backdrop-blur-sm"
                   />
                 </Form>
-                <Suspense fallback={<MobileLinks pathname="" compareCount={ids.length} onNavigate={() => setOpen(false)} />}>
-                  <ActiveMobileLinks compareCount={ids.length} onNavigate={() => setOpen(false)} />
+                <Suspense fallback={<MobileLinks pathname="" onNavigate={() => setOpen(false)} />}>
+                  <ActiveMobileLinks onNavigate={() => setOpen(false)} />
                 </Suspense>
               </nav>
               <div className="relative flex flex-col gap-2 border-t border-foreground/10 p-4">

@@ -9,7 +9,7 @@ const dmSans = DM_Sans({ variable: "--font-dm-sans", subsets: ["latin"] });
 const notoSansEthiopic = Noto_Sans_Ethiopic({ variable: "--font-noto-ethiopic", subsets: ["ethiopic"] });
 
 export const metadata: Metadata = {
-  title: "404 | Ethio Market",
+  title: "404 | Ethio Computer",
   description: "Page not found",
 };
 

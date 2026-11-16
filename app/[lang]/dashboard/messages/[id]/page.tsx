@@ -47,7 +47,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
         >
           <ShieldAlertIcon className={cn("size-4 shrink-0", strikes > 0 ? "text-destructive" : "text-primary")} />
           <p>
-            {t("Keep the whole deal on Ethio Market. Messages with phone numbers, usernames, links, emails or other apps are not delivered, and the third attempt suspends your account automatically.")}{" "}
+            {t("Keep the whole deal on Ethio Computer. Messages with phone numbers, usernames, links, emails or other apps are not delivered, and the third attempt suspends your account automatically.")}{" "}
             {strikes > 0 ? <strong>{t("Your warnings: {count} of {max}.", { count: strikes, max: MAX_CHAT_STRIKES })}</strong> : null}
           </p>
         </div>

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { FlagIcon, MessageCircleIcon } from "lucide-react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
-import { CompareToggle } from "@/components/compare-toggle";
 import { FieldSelect } from "@/components/field-select";
 import { useT } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
@@ -94,8 +93,7 @@ export function ListingActions({ id, price, canOffer }: { id: string; price: num
         </SubmitButton>
       </ActionForm>
 
-      <div className="grid grid-cols-2 gap-2">
-        <CompareToggle id={id} />
+      <div className="flex justify-center">
         <Dialog open={reportOpen} onOpenChange={setReportOpen}>
           <DialogTrigger render={<Button variant="ghost" />}>
             <FlagIcon data-icon="inline-start" />

@@ -18,10 +18,10 @@ export default async function AboutPage() {
         eyebrow={t("About us")}
         title={
           <>
-            {t("Why")} <span className="text-gold">Ethio Market?</span>
+            {t("Why")} <span className="text-gold">Ethio Computer?</span>
           </>
         }
-        description={t("Ethio Market is a marketplace for buying and selling social media accounts.")}
+        description={t("Ethio Computer is a marketplace for buying and selling social media accounts.")}
       />
       <div className="grid gap-6 md:grid-cols-3">
         {values.map((value) => (

@@ -254,7 +254,7 @@ export type HandoverValue = "SELF" | "AGENT";
 
 export const handoverOptions: { value: HandoverValue; label: MessageKey; description: MessageKey; feePercent: number }[] = [
   { value: "SELF", label: "Complete it ourselves", description: "Buyer and seller do the handover themselves through the site.", feePercent: FEE_PERCENT.SELF },
-  { value: "AGENT", label: "Through Ethio Market's agent", description: "Our agent takes the account from the seller, checks it and hands it to the buyer.", feePercent: FEE_PERCENT.AGENT },
+  { value: "AGENT", label: "Through Ethio Computer's agent", description: "Our agent takes the account from the seller, checks it and hands it to the buyer.", feePercent: FEE_PERCENT.AGENT },
 ];
 
 export type ReviewStatusValue = "PENDING" | "APPROVED" | "REJECTED";
