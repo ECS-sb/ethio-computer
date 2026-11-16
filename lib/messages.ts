@@ -980,6 +980,12 @@ export const am = {
   "match": "ይስማማል",
   "don't match": "አይስማማም",
   "Verify seller": "ሻጩን አረጋግጥ",
+
+  // ---- የመነሻ ገጽ ሄሮ (የፕላትፎርም ቅስት)
+  "Buy or sell": "ይግዙ ወይም ይሽጡ፦",
+  "social media accounts": "የሶሻል ሚዲያ አካውንቶች",
+  "Verified sellers, payment held until handover, and a clear process. Tap a platform to see its accounts.": "የተረጋገጡ ሻጮች፣ ርክክብ እስኪጠናቀቅ የሚያዝ ክፍያ እና ግልጽ ሂደት። አካውንቶቹን ለማየት ፕላትፎርሙን ይንኩ።",
+  "{platform} accounts": "የ{platform} አካውንቶች",
 } as const;
 
 export type MessageKey = keyof typeof am;

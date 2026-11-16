@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import Form from "next/form";
 import { connection } from "next/server";
 import {
   ArrowRightIcon,
@@ -7,19 +6,16 @@ import {
   BadgeCheckIcon,
   CheckIcon,
   LayoutGridIcon,
-  SearchIcon,
-  ShieldCheckIcon,
   SparklesIcon,
   UsersIcon,
   WalletIcon,
 } from "lucide-react";
 import { Eyebrow, PlatformMark } from "@/components/brand";
 import { GrowthChart } from "@/components/growth-chart";
-import { HeroVisual } from "@/components/hero-visual";
+import { PlatformOrbit } from "@/components/platform-orbit";
 import { LocaleLink } from "@/components/i18n-provider";
 import { ListingCard } from "@/components/listing-card";
 import { buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   categories,
@@ -30,8 +26,7 @@ import {
   platforms,
   priceRanges,
 } from "@/lib/catalog";
-import { localePath } from "@/lib/i18n";
-import { getLocale, getT } from "@/lib/i18n-server";
+import { getT } from "@/lib/i18n-server";
 import type { MessageKey } from "@/lib/messages";
 import { getFeaturedListings, getPlatformCounts, getTopSellers } from "@/lib/queries";
 import { cn } from "@/lib/utils";
@@ -153,76 +148,43 @@ async function TopSellers() {
   );
 }
 
-function Hero({ t, searchAction }: { t: T; searchAction: string }) {
+function Hero({ t }: { t: T }) {
   return (
-    <section className="relative grid items-center gap-12 pt-12 lg:grid-cols-[1.1fr_1fr] lg:pt-20">
-      <div aria-hidden className="pointer-events-none absolute -top-24 -left-32 -z-10 size-80 rounded-full sm:size-[32rem] bg-primary/10 blur-3xl" />
-      <div className="flex flex-col items-start gap-8">
-        <p className={cn(reveal, "flex w-fit items-center gap-2 rounded-full bg-card/70 px-4 py-2 text-xs font-medium ring-1 ring-primary/30 backdrop-blur-sm")}>
-          <span aria-hidden className="relative flex size-2">
-            <span className="absolute inline-flex size-full rounded-full bg-primary opacity-75 motion-safe:animate-ping" />
-            <span className="relative inline-flex size-2 rounded-full bg-primary" />
-          </span>
-          {t("The account marketplace for Ethiopia")}
-        </p>
+    <section className="relative flex flex-col items-center gap-8 pt-12 text-center lg:pt-16">
+      <p className={cn(reveal, "flex w-fit items-center gap-2 rounded-full bg-card/70 px-4 py-2 text-xs font-medium ring-1 ring-primary/30 backdrop-blur-sm")}>
+        <span aria-hidden className="relative flex size-2">
+          <span className="absolute inline-flex size-full rounded-full bg-primary opacity-75 motion-safe:animate-ping" />
+          <span className="relative inline-flex size-2 rounded-full bg-primary" />
+        </span>
+        {t("The account marketplace for Ethiopia")}
+      </p>
 
-        <h1 className={cn(reveal, "text-5xl leading-[1.05] font-extrabold tracking-tighter delay-100 sm:text-7xl")}>
-          <span className="block">{t("Social media accounts")}</span>
-          <span className="block text-gold">{t("Buy and sell")}</span>
-          <span className="block">{t("the safer way.")}</span>
-        </h1>
+      <h1 className={cn(reveal, "max-w-4xl text-4xl leading-[1.1] font-extrabold tracking-tighter delay-100 sm:text-6xl lg:text-7xl")}>
+        {t("Buy or sell")} <span className="text-gold">{t("social media accounts")}</span>
+      </h1>
 
-        <p className={cn(reveal, "max-w-xl text-lg text-muted-foreground delay-200")}>
-          {t("Browse accounts from Instagram to Telegram, compare them, and buy through a process you can follow step by step.")}
-        </p>
+      <p className={cn(reveal, "max-w-xl text-base text-muted-foreground delay-200 sm:text-lg")}>
+        {t("Verified sellers, payment held until handover, and a clear process. Tap a platform to see its accounts.")}
+      </p>
 
-        <Form action={searchAction} role="search" className={cn(reveal, "relative w-full max-w-xl delay-300")}>
-          <SearchIcon aria-hidden className="pointer-events-none absolute top-1/2 left-5 size-5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            name="q"
-            aria-label={t("Search accounts")}
-            placeholder={t("Search accounts…")}
-            className="h-16 rounded-full bg-card/80 pr-16 pl-14 text-base ring-1 ring-foreground/10 backdrop-blur-sm focus-visible:ring-primary/60 sm:pr-44"
-          />
-          <button
-            type="submit"
-            className={cn(buttonVariants({ size: "lg" }), "absolute top-1/2 right-2 size-12 -translate-y-1/2 rounded-full px-0 sm:w-auto sm:px-6")}
-          >
-            <SearchIcon className="size-5 sm:hidden" />
-            <span className="sr-only sm:not-sr-only">{t("Search accounts")}</span>
-          </button>
-        </Form>
-
-        <div className={cn(reveal, "flex flex-wrap items-center gap-2 delay-500")}>
-          <LocaleLink href="/accounts" className={cn(buttonVariants({ size: "lg" }), "shadow-lg shadow-primary/25")}>
+      <div className={cn(reveal, "flex flex-wrap items-center justify-center gap-4 delay-300")}>
+        {/* የሚንቀሳቀስ (wave) አዝራር፦ ከኋላው የሚሰፋ ወርቃማ ሞገድ */}
+        <span className="relative inline-flex">
+          <span aria-hidden className="absolute inset-0 rounded-full bg-primary/40 motion-safe:animate-ping motion-safe:[animation-duration:2s]" />
+          <span aria-hidden className="absolute -inset-1 rounded-full bg-primary/20 blur-md" />
+          <LocaleLink href="/accounts" className={cn(buttonVariants({ size: "lg" }), "relative rounded-full bg-linear-to-r from-primary to-gold-2 px-8 shadow-lg shadow-primary/30")}>
             {t("Browse the market")}
             <ArrowRightIcon data-icon="inline-end" />
           </LocaleLink>
-          <LocaleLink href="/sell" className={buttonVariants({ size: "lg", variant: "outline" })}>
-            {t("Sell an account")}
-          </LocaleLink>
-        </div>
-
-        <div className={cn(reveal, "flex w-full flex-wrap items-center gap-6 border-t border-border pt-8 delay-700")}>
-          <div className="flex items-center gap-4">
-            <div className="flex -space-x-2">
-              {platforms.map((platform) => (
-                <PlatformMark key={platform.id} mark={platform.mark} className="size-10 rounded-full bg-secondary ring-2 ring-background" />
-              ))}
-            </div>
-            <div>
-              <p className="font-heading text-lg font-semibold text-primary">{t("{count} platforms", { count: platforms.length })}</p>
-              <p className="text-sm text-muted-foreground">{t("in one market")}</p>
-            </div>
-          </div>
-          <div className="hidden h-10 w-px bg-border sm:block" />
-          <div className="flex items-center gap-2 text-sm">
-            <ShieldCheckIcon className="size-5 text-primary" />
-            {t("Ownership is verified")}
-          </div>
-        </div>
+        </span>
+        <LocaleLink href="/sell" className={cn(buttonVariants({ size: "lg", variant: "outline" }), "rounded-full bg-card/50 px-8 backdrop-blur-sm")}>
+          {t("Sell an account")}
+        </LocaleLink>
       </div>
-      <HeroVisual />
+
+      <div className={cn(reveal, "w-full px-2 pt-6 delay-500 sm:px-12 sm:pt-12")}>
+        <PlatformOrbit />
+      </div>
     </section>
   );
 }
@@ -402,10 +364,9 @@ function SellCta({ t }: { t: T }) {
 
 export default async function HomePage() {
   const t = await getT();
-  const searchAction = localePath(await getLocale(), "/accounts");
   return (
     <>
-      <Hero t={t} searchAction={searchAction} />
+      <Hero t={t} />
 
       <section aria-labelledby="platforms-heading" className="flex flex-col gap-6 pt-20">
         <h2 id="platforms-heading" className="sr-only">
