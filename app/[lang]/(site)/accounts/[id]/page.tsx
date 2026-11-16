@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { ArrowLeftIcon, BadgeCheckIcon } from "lucide-react";
+import { ArrowLeftIcon, BadgeCheckIcon, MessageCircleIcon, UserPlusIcon } from "lucide-react";
+import { CompareToggle } from "@/components/compare-toggle";
 import { PlatformMark } from "@/components/brand";
 import { LocaleLink } from "@/components/i18n-provider";
 import { ListingActions } from "@/components/listing-actions";
@@ -186,12 +187,27 @@ async function ListingContent({ params }: Props) {
               ) : viewer ? (
                 <ListingActions id={listing.id} price={listing.priceEtb} canOffer />
               ) : (
-                <LocaleLink
-                  href={`/login?next=${encodeURIComponent(`/accounts/${listing.id}`)}`}
-                  className={buttonVariants({ size: "lg", className: "w-full" })}
-                >
-                  {t("Sign in to buy")}
-                </LocaleLink>
+                // ማየት ለሁሉም ክፍት ነው፤ መግዛት ወይም ሻጩን ማናገር ሲፈልጉ ብቻ ይመዘገባሉ (ከዚያ ወደዚሁ ገጽ ይመለሳሉ)።
+                <div className="flex flex-col gap-2">
+                  <LocaleLink
+                    href={`/login?next=${encodeURIComponent(`/accounts/${listing.id}`)}`}
+                    className={buttonVariants({ size: "lg", className: "w-full" })}
+                  >
+                    {t("Make an offer")}
+                  </LocaleLink>
+                  <LocaleLink
+                    href={`/login?next=${encodeURIComponent(`/accounts/${listing.id}`)}`}
+                    className={buttonVariants({ size: "lg", variant: "outline", className: "w-full" })}
+                  >
+                    <MessageCircleIcon data-icon="inline-start" />
+                    {t("Message the seller")}
+                  </LocaleLink>
+                  <CompareToggle id={listing.id} />
+                  <p className="flex items-start gap-2 pt-2 text-xs text-muted-foreground">
+                    <UserPlusIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+                    {t("Browsing is free. You'll create an account with Gmail only when you buy or message the seller.")}
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>

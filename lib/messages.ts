@@ -993,6 +993,7 @@ export const am = {
   "All {platform} accounts": "ሁሉም የ{platform} አካውንቶች",
   "Follow Ethio Computer School": "Ethio Computer Schoolን ይከተሉ",
   "Website": "ድረ-ገጽ",
+  "Browsing is free. You'll create an account with Gmail only when you buy or message the seller.": "ማየት ነፃ ነው። በGmail አካውንት የሚፈጥሩት ሲገዙ ወይም ሻጩን ሲያናግሩ ብቻ ነው።",
 } as const;
 
 export type MessageKey = keyof typeof am;
