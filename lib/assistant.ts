@@ -65,12 +65,13 @@ export function streamAssistantReply(messages: AssistantMessage[], language: "en
   const params: Anthropic.MessageStreamParams = {
     model: AI_MODEL,
     max_tokens: 1500,
-    system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+    // መመሪያው ይቀመጣል (cache)፤ የቋንቋ ምርጫው ከዚያ በኋላ ስለሚመጣ መመሪያውን አይቀይርም።
+    system: [
+      { type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } },
+      { type: "text", text: `Preferred language if unclear: ${language === "am" ? "Amharic (Ge'ez letters)" : "English"}.` },
+    ],
     output_config: { effort: "low" },
-    messages: [
-      ...messages.map((message) => ({ role: message.role, content: message.content })),
-      { role: "system" as const, content: `Preferred language if unclear: ${language === "am" ? "Amharic (Ge'ez letters)" : "English"}.` },
-    ] as Anthropic.MessageParam[],
+    messages: messages.map((message): Anthropic.MessageParam => ({ role: message.role, content: message.content })),
   };
   return anthropic().messages.stream(params);
 }
