@@ -24,7 +24,7 @@ function position(angle: number) {
 }
 
 /** የፕላትፎርም ሎጎዎች በቅስት ላይ፤ ሲነኩ የዚያ ፕላትፎርም አካውንቶች ይከፈታሉ። */
-export async function PlatformOrbit() {
+export async function PlatformOrbit({ title, highlight }: { title: string; highlight: string }) {
   const t = await getT();
   return (
     <div className="relative mx-auto aspect-[2/1] w-full max-w-4xl">
@@ -35,6 +35,12 @@ export async function PlatformOrbit() {
             <stop offset="0.5" stopColor="#FFBE1A" stopOpacity="0.7" />
             <stop offset="1" stopColor="#FFAA33" stopOpacity="0" />
           </linearGradient>
+          <linearGradient id="orbit-title-gold" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#FFBE1A" />
+            <stop offset="1" stopColor="#FFAA33" />
+          </linearGradient>
+          {/* ርዕሱ የሚጻፍበት ቅስት (በውጪው ቅስትና በመሃሉ ሎጎ መካከል) */}
+          <path id="orbit-title-path" d="M36.6 70.4 A70 70 0 0 1 163.4 70.4" />
           <radialGradient id="ig-gradient" cx="0.3" cy="1.07" r="1.3">
             <stop offset="0" stopColor="#FFDD55" />
             <stop offset="0.35" stopColor="#FF543E" />
@@ -44,6 +50,12 @@ export async function PlatformOrbit() {
         </defs>
         <path d="M10 100 A90 90 0 0 1 190 100" fill="none" stroke="url(#orbit-arc)" strokeWidth="0.6" />
         <path d="M40 100 A60 60 0 0 1 160 100" fill="none" stroke="url(#orbit-arc)" strokeWidth="0.4" strokeDasharray="1.5 2.5" opacity="0.6" />
+        {/* የተጣመመው ርዕስ፤ ለስክሪን አንባቢዎች እውነተኛው h1 በገጹ ላይ አለ። */}
+        <text className="font-heading text-[7px] sm:text-[5.8px]" fontWeight="800" letterSpacing="-0.15" textAnchor="middle">
+          <textPath href="#orbit-title-path" startOffset="50%">
+            <tspan className="fill-foreground">{title}</tspan> <tspan fill="url(#orbit-title-gold)">{highlight}</tspan>
+          </textPath>
+        </text>
       </svg>
 
       {/* መሃሉ፦ የEthio Market ሎጎ ከወርቃማ ብርሃን ጋር */}

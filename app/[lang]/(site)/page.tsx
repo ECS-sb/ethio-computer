@@ -150,40 +150,32 @@ async function TopSellers() {
 
 function Hero({ t }: { t: T }) {
   return (
-    <section className="relative flex flex-col items-center gap-8 pt-12 text-center lg:pt-16">
-      <p className={cn(reveal, "flex w-fit items-center gap-2 rounded-full bg-card/70 px-4 py-2 text-xs font-medium ring-1 ring-primary/30 backdrop-blur-sm")}>
-        <span aria-hidden className="relative flex size-2">
-          <span className="absolute inline-flex size-full rounded-full bg-primary opacity-75 motion-safe:animate-ping" />
-          <span className="relative inline-flex size-2 rounded-full bg-primary" />
-        </span>
-        {t("The account marketplace for Ethiopia")}
-      </p>
-
-      <h1 className={cn(reveal, "max-w-4xl text-4xl leading-[1.1] font-extrabold tracking-tighter delay-100 sm:text-6xl lg:text-7xl")}>
-        {t("Buy or sell")} <span className="text-gold">{t("social media accounts")}</span>
+    <section className="relative flex flex-col items-center gap-6 pt-6 text-center sm:pt-10">
+      <h1 className="sr-only">
+        {t("Buy or sell")} {t("social media accounts")}
       </h1>
 
-      <p className={cn(reveal, "max-w-xl text-base text-muted-foreground delay-200 sm:text-lg")}>
+      <div className={cn(reveal, "w-full px-1 sm:px-12")}>
+        <PlatformOrbit title={t("Buy or sell")} highlight={t("social media accounts")} />
+      </div>
+
+      <p className={cn(reveal, "max-w-md text-sm text-muted-foreground delay-200 sm:text-base")}>
         {t("Verified sellers, payment held until handover, and a clear process. Tap a platform to see its accounts.")}
       </p>
 
-      <div className={cn(reveal, "flex flex-wrap items-center justify-center gap-4 delay-300")}>
+      <div className={cn(reveal, "flex flex-wrap items-center justify-center gap-2 delay-300 sm:gap-4")}>
         {/* የሚንቀሳቀስ (wave) አዝራር፦ ከኋላው የሚሰፋ ወርቃማ ሞገድ */}
         <span className="relative inline-flex">
           <span aria-hidden className="absolute inset-0 rounded-full bg-primary/40 motion-safe:animate-ping motion-safe:[animation-duration:2s]" />
           <span aria-hidden className="absolute -inset-1 rounded-full bg-primary/20 blur-md" />
-          <LocaleLink href="/accounts" className={cn(buttonVariants({ size: "lg" }), "relative rounded-full bg-linear-to-r from-primary to-gold-2 px-8 shadow-lg shadow-primary/30")}>
+          <LocaleLink href="/accounts" className={cn(buttonVariants(), "relative rounded-full bg-linear-to-r from-primary to-gold-2 px-4 shadow-lg shadow-primary/30 sm:px-6")}>
             {t("Browse the market")}
             <ArrowRightIcon data-icon="inline-end" />
           </LocaleLink>
         </span>
-        <LocaleLink href="/sell" className={cn(buttonVariants({ size: "lg", variant: "outline" }), "rounded-full bg-card/50 px-8 backdrop-blur-sm")}>
+        <LocaleLink href="/sell" className={cn(buttonVariants({ variant: "outline" }), "rounded-full bg-card/50 px-4 backdrop-blur-sm sm:px-6")}>
           {t("Sell an account")}
         </LocaleLink>
-      </div>
-
-      <div className={cn(reveal, "w-full px-2 pt-6 delay-500 sm:px-12 sm:pt-12")}>
-        <PlatformOrbit />
       </div>
     </section>
   );
