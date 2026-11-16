@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { AssistantSlot } from "@/components/assistant-slot";
 import { GridBackdrop } from "@/components/brand";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { Header } from "@/components/header";
+import { MobileTabBar } from "@/components/mobile-tab-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getT } from "@/lib/i18n-server";
 
@@ -16,7 +18,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="relative isolate flex min-h-full flex-1 flex-col">
       <GridBackdrop />
       <Header />
-      <div className="mx-auto grid w-full max-w-7xl flex-1 content-start items-start gap-6 p-6 lg:grid-cols-[16rem_1fr]">
+      <div className="mx-auto grid w-full max-w-7xl flex-1 content-start items-start gap-6 p-4 sm:p-6 lg:grid-cols-[16rem_1fr]">
         <aside className="min-w-0 rounded-xl bg-card/70 p-2 ring-1 ring-foreground/10 lg:sticky lg:top-24">
           <Suspense fallback={<Skeleton className="h-11 rounded-xl" />}>
             <DashboardNav area="user" />
@@ -26,6 +28,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Suspense fallback={<Skeleton className="h-96 rounded-xl" />}>{children}</Suspense>
         </main>
       </div>
+      <MobileTabBar />
+      <AssistantSlot />
     </div>
   );
 }

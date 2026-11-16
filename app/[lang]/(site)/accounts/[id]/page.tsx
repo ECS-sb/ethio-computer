@@ -62,6 +62,24 @@ async function ListingContent({ params }: Props) {
               </p>
             </div>
           </header>
+          {/* በስልክ ላይ የግዢው ካርድ ከገጹ ታች ስለሚሆን፣ ዋጋውና ዋናው ቁልፍ እዚህም ይታያሉ። */}
+          {!isOwner && listing.status === "APPROVED" ? (
+            <div className="flex items-center justify-between gap-4 rounded-xl bg-card/70 p-4 ring-1 ring-primary/30 lg:hidden">
+              <div>
+                <p className="text-xs text-muted-foreground">{t("Price")}</p>
+                <p className="font-heading text-2xl font-bold text-primary">{formatPrice(t, listing.priceEtb)}</p>
+              </div>
+              {viewer ? (
+                <a href="#buy" className={buttonVariants({ className: "rounded-full px-6" })}>
+                  {t("Make an offer")}
+                </a>
+              ) : (
+                <LocaleLink href={`/login?next=${encodeURIComponent(`/accounts/${listing.id}`)}`} className={buttonVariants({ className: "rounded-full px-6" })}>
+                  {t("Make an offer")}
+                </LocaleLink>
+              )}
+            </div>
+          ) : null}
 
           <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
             {stats.map((stat) => (
@@ -161,7 +179,7 @@ async function ListingContent({ params }: Props) {
         </div>
 
         <aside className="flex flex-col gap-6 lg:sticky lg:top-24">
-          <Card className="bg-card/70 [--card-spacing:--spacing(6)]">
+          <Card id="buy" className="scroll-mt-28 bg-card/70 [--card-spacing:--spacing(6)]">
             <CardHeader>
               <CardDescription>{t("Price")}</CardDescription>
               <CardTitle className="text-3xl font-semibold">{formatPrice(t, listing.priceEtb)}</CardTitle>

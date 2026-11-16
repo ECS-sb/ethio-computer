@@ -997,6 +997,25 @@ export const am = {
   "Switch light or dark mode": "ብሩህ ወይም ጨለማ ገጽታ ቀይር",
   "Light mode": "ብሩህ ገጽታ",
   "Dark mode": "ጨለማ ገጽታ",
+
+  // ---- የAI ረዳት እና የሞባይል አሞሌ
+  "Ask our assistant": "ረዳታችንን ይጠይቁ",
+  "Need help?": "እገዛ ይፈልጋሉ?",
+  "Ethio Computer assistant": "የEthio Computer ረዳት",
+  "AI assistant · replies in seconds": "የAI ረዳት · በሰከንዶች ይመልሳል",
+  "Reply language": "የመልስ ቋንቋ",
+  "Hi! Ask me anything about buying or selling accounts, the wallet or fees. I reply in Amharic or English.": "ሰላም! ስለ አካውንት መግዛት ወይም መሸጥ፣ ስለ ዋሌት ወይም ስለ ክፍያ ማንኛውንም ይጠይቁኝ። በአማርኛ ወይም በእንግሊዝኛ እመልሳለሁ።",
+  "Sorry, I couldn't answer right now. Try again, or contact us on the Contact page.": "ይቅርታ፣ አሁን መመለስ አልቻልኩም። እንደገና ይሞክሩ፣ ወይም በ\"ያግኙን\" ገጽ ያናግሩን።",
+  "Writing…": "እየጻፈ ነው…",
+  "Answers come from AI and can be wrong. The chat isn't saved. Never share passwords or codes here.": "መልሶቹ ከAI ናቸው፤ ሊሳሳቱ ይችላሉ። ውይይቱ አይቀመጥም። የይለፍ ቃል ወይም ኮድ እዚህ በፍጹም አያጋሩ።",
+  "How do I buy an account?": "አካውንት እንዴት እገዛለሁ?",
+  "How do I sell my account?": "አካውንቴን እንዴት እሸጣለሁ?",
+  "How do I add money to my wallet?": "ዋሌቴ ላይ ገንዘብ እንዴት አስገባለሁ?",
+  "How do I get verified?": "እንዴት እረጋገጣለሁ?",
+  "Write your question…": "ጥያቄዎን ይጻፉ…",
+  "Quick menu": "ፈጣን ምናሌ",
+  "Home": "ቤት",
+  "Me": "እኔ",
 } as const;
 
 export type MessageKey = keyof typeof am;
