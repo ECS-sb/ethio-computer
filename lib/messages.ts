@@ -986,6 +986,13 @@ export const am = {
   "social media accounts": "የሶሻል ሚዲያ አካውንቶች",
   "Verified sellers, payment held until handover, and a clear process. Tap a platform to see its accounts.": "የተረጋገጡ ሻጮች፣ ርክክብ እስኪጠናቀቅ የሚያዝ ክፍያ እና ግልጽ ሂደት። አካውንቶቹን ለማየት ፕላትፎርሙን ይንኩ።",
   "{platform} accounts": "የ{platform} አካውንቶች",
+
+  // ---- የመነሻ ገጽ ገበያ እና ፉተር
+  "Buy": "ይግዙ፦",
+  "No {platform} accounts yet.": "እስካሁን የ{platform} አካውንት የለም።",
+  "All {platform} accounts": "ሁሉም የ{platform} አካውንቶች",
+  "Follow Ethio Computer School": "Ethio Computer Schoolን ይከተሉ",
+  "Website": "ድረ-ገጽ",
 } as const;
 
 export type MessageKey = keyof typeof am;

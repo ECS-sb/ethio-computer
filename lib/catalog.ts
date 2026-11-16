@@ -39,6 +39,19 @@ export const contact = {
   phoneUrl: "tel:+251924888899",
 };
 
+/**
+ * የEthio Computer School ሶሻል ሚዲያ አካውንቶች (ፉተሩ ላይ ይታያሉ)። url ባዶ የሆኑት አይታዩም፤
+ * ሊንኩ ሲገኝ እዚህ ማስገባት ብቻ ይበቃል።
+ */
+export const schoolSocials: { platform: PlatformId; handle: string; url: string }[] = [
+  { platform: "telegram", handle: "@ethiocss", url: "https://t.me/ethiocss" },
+  { platform: "telegram", handle: "@ethiocomputerschool", url: "https://t.me/ethiocomputerschool" },
+  { platform: "youtube", handle: "", url: "" },
+  { platform: "tiktok", handle: "", url: "" },
+  { platform: "facebook", handle: "", url: "" },
+  { platform: "instagram", handle: "", url: "" },
+];
+
 export const categories: Option[] = [
   { value: "lifestyle", label: "Lifestyle" },
   { value: "business", label: "Business" },
