@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans, JetBrains_Mono, Noto_Sans_Ethiopic, Plus_Jakarta_Sans } from "next/font/google";
 import { I18nProvider } from "@/components/i18n-provider";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -36,8 +36,13 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: { default: "Ethio Computer", template: "%s | Ethio Computer" },
     description: t("The marketplace for social media accounts"),
+    applicationName: "Ethio Computer",
+    appleWebApp: { capable: true, title: "Ethio Computer", statusBarStyle: "black" },
   };
 }
+
+// በስልክ ላይ የአፑ የላይኛው አሞሌ ቀለም (ጨለማው ነባሪ ገጽታ)።
+export const viewport: Viewport = { themeColor: "#000000", viewportFit: "cover" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
