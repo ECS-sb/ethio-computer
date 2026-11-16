@@ -1,3 +1,4 @@
+import { FEE_PERCENT } from "@/lib/fees";
 import type { MessageKey } from "@/lib/messages";
 
 export type PlatformId = "instagram" | "tiktok" | "youtube" | "telegram" | "facebook" | "x";
@@ -119,7 +120,7 @@ export const orderStages: OrderStatusValue[] = ["AWAITING_PAYMENT", "PAID", "TRA
 export const howItWorksSteps: { title: MessageKey; description: MessageKey }[] = [
   { title: "Ownership is verified", description: "The seller adds the account, puts the verification code in its bio, and an admin reviews it." },
   { title: "The buyer makes an offer", description: "The buyer reviews and compares the details, then sends the seller an offer." },
-  { title: "Payment is confirmed", description: "When the seller accepts, an order opens and an admin confirms the payment." },
+  { title: "Payment is confirmed", description: "When the seller accepts, the buyer pays from their wallet and the money is held until the handover." },
   { title: "Handover and completion", description: "The seller transfers the account, the buyer confirms, and the order is completed for the seller." },
 ];
 
@@ -134,7 +135,19 @@ export const faqs: { question: MessageKey; answer: MessageKey }[] = [
   },
   {
     question: "How does payment work?",
-    answer: "Online payment is not connected yet. Don't send money to anyone without instructions from an admin.",
+    answer: "Add money to your wallet by sending it to one of our accounts and uploading the receipt. You pay for accounts from your wallet, and the money is held until you confirm the handover.",
+  },
+  {
+    question: "What are the fees?",
+    answer: "The seller pays 10% when buyer and seller complete the handover themselves, or 15% when our agent handles the handover. Buyers pay only the agreed price.",
+  },
+  {
+    question: "Why should I verify my seller account?",
+    answer: "Verified sellers get a badge, appear first in the market and sell faster, because buyers trust them more. You verify with your phone, Fayda ID or passport, and a bank account in the same name.",
+  },
+  {
+    question: "Can we share phone numbers or usernames in chat?",
+    answer: "No. Messages with phone numbers, usernames, links or other apps are not delivered. After the third attempt the account is suspended automatically.",
   },
   {
     question: "Are account passwords stored here?",
@@ -188,3 +201,68 @@ export function formatDate(value: Date | string): string {
 export function formatDateTime(value: Date | string): string {
   return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Addis_Ababa" }).format(new Date(value));
 }
+
+// ---- ዋሌት እና የሻጭ ማረጋገጫ
+
+/** ገንዘብ የሚገባባቸው መንገዶች (የድርጅቱ ሂሳቦች በWALLET_DEPOSIT_ACCOUNTS ይዘጋጃሉ)። */
+export const depositMethods: Option[] = [
+  { value: "telebirr", label: "Telebirr" },
+  { value: "cbe", label: "Commercial Bank of Ethiopia" },
+  { value: "cbe-birr", label: "CBE Birr" },
+  { value: "boa", label: "Bank of Abyssinia" },
+  { value: "awash", label: "Awash Bank" },
+  { value: "dashen", label: "Dashen Bank" },
+];
+
+export const banks: Option[] = [
+  { value: "cbe", label: "Commercial Bank of Ethiopia" },
+  { value: "boa", label: "Bank of Abyssinia" },
+  { value: "awash", label: "Awash Bank" },
+  { value: "dashen", label: "Dashen Bank" },
+  { value: "coop", label: "Cooperative Bank of Oromia" },
+  { value: "wegagen", label: "Wegagen Bank" },
+  { value: "hibret", label: "Hibret Bank" },
+  { value: "nib", label: "Nib Bank" },
+  { value: "abay", label: "Abay Bank" },
+  { value: "zemen", label: "Zemen Bank" },
+  { value: "bunna", label: "Bunna Bank" },
+  { value: "berhan", label: "Berhan Bank" },
+  { value: "enat", label: "Enat Bank" },
+  { value: "amhara", label: "Amhara Bank" },
+  { value: "telebirr", label: "Telebirr" },
+];
+
+export const idTypes: Option[] = [
+  { value: "FAYDA", label: "Fayda national ID" },
+  { value: "PASSPORT", label: "Passport" },
+];
+
+export type HandoverValue = "SELF" | "AGENT";
+
+export const handoverOptions: { value: HandoverValue; label: MessageKey; description: MessageKey; feePercent: number }[] = [
+  { value: "SELF", label: "Complete it ourselves", description: "Buyer and seller do the handover themselves through the site.", feePercent: FEE_PERCENT.SELF },
+  { value: "AGENT", label: "Through Ethio Market's agent", description: "Our agent takes the account from the seller, checks it and hands it to the buyer.", feePercent: FEE_PERCENT.AGENT },
+];
+
+export type ReviewStatusValue = "PENDING" | "APPROVED" | "REJECTED";
+
+export const reviewStatusLabels: Record<ReviewStatusValue, MessageKey> = {
+  PENDING: "Waiting for review",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+};
+
+export const withdrawalStatusLabels: Record<"PENDING" | "PAID" | "REJECTED", MessageKey> = {
+  PENDING: "Waiting for review",
+  PAID: "Paid",
+  REJECTED: "Rejected",
+};
+
+export const walletEntryLabels: Record<"DEPOSIT" | "PURCHASE" | "REFUND" | "SALE" | "WITHDRAWAL" | "WITHDRAWAL_RETURNED", MessageKey> = {
+  DEPOSIT: "Deposit",
+  PURCHASE: "Purchase",
+  REFUND: "Refund",
+  SALE: "Sale (after fee)",
+  WITHDRAWAL: "Withdrawal",
+  WITHDRAWAL_RETURNED: "Withdrawal returned",
+};

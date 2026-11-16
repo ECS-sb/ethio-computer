@@ -1,12 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { categories, countries, MAX_SCREENSHOT_BYTES, MAX_SCREENSHOTS, platforms, reportReasons } from "@/lib/catalog";
+import { banks, categories, countries, depositMethods, MAX_SCREENSHOT_BYTES, MAX_SCREENSHOTS, platforms, reportReasons } from "@/lib/catalog";
 import { db } from "@/lib/db";
 import { localePath } from "@/lib/i18n";
 import { optimizeScreenshot } from "@/lib/images";
+import { reviewListing, reviewListingInBackground } from "@/lib/listing-review";
 import * as market from "@/lib/marketplace";
 import type { MessageKey } from "@/lib/messages";
 import { requestLocale, requireAdmin, requireUser } from "@/lib/session";
@@ -78,6 +80,8 @@ export async function createListingAction(data: FormData): Promise<ActionResult>
   return run("Your listing was sent for review.", async () => {
     const images = await Promise.all(screenshots.map(optimizeScreenshot));
     const created = await market.createListing(user, { ...parsed.data, originalEmail, special, ...youtube }, images);
+    // AI ግምገማው ሻጩን አያስጠብቅም፤ ምላሹ ከተላከ በኋላ ይሰራል።
+    after(() => reviewListingInBackground(created.id));
     return { code: created.verificationCode, id: created.id };
   });
 }
@@ -111,11 +115,11 @@ export async function setAvailabilityAction(data: FormData): Promise<ActionResul
 export async function createOfferAction(data: FormData): Promise<ActionResult> {
   const user = await requireUser();
   const parsed = z
-    .object({ listingId: id, amountEtb: money, note: z.string().trim().max(500).default("") })
-    .safeParse({ listingId: field(data, "listingId"), amountEtb: field(data, "amountEtb"), note: field(data, "note") });
+    .object({ listingId: id, amountEtb: money, note: z.string().trim().max(500).default(""), handover: z.enum(["SELF", "AGENT"]).default("SELF") })
+    .safeParse({ listingId: field(data, "listingId"), amountEtb: field(data, "amountEtb"), note: field(data, "note"), handover: field(data, "handover") });
   if (!parsed.success) return INVALID;
   return run("Your offer was sent to the seller.", async () => {
-    await market.createOffer(user, parsed.data.listingId, parsed.data.amountEtb, parsed.data.note);
+    await market.createOffer(user, parsed.data.listingId, parsed.data.amountEtb, parsed.data.note, parsed.data.handover);
   });
 }
 
@@ -134,6 +138,7 @@ const withdrawOfferImpl = offerAction("Offer withdrawn.", market.withdrawOffer);
 const rejectOfferImpl = offerAction("Offer declined.", market.rejectOffer);
 const acceptOfferImpl = offerAction("Offer accepted. An order was opened.", market.acceptOffer);
 const markTransferredImpl = offerAction("Transfer recorded.", market.markTransferred);
+const payOrderImpl = offerAction("Paid from your wallet. The money is held until the handover is complete.", market.payOrderFromWallet);
 const confirmReceivedImpl = offerAction("Handover confirmed.", market.confirmReceived);
 const openDisputeImpl = offerAction("Dispute opened. An admin will review it.", market.openDispute);
 
@@ -145,6 +150,9 @@ export async function rejectOfferAction(data: FormData) {
 }
 export async function acceptOfferAction(data: FormData) {
   return acceptOfferImpl(data);
+}
+export async function payOrderAction(data: FormData) {
+  return payOrderImpl(data);
 }
 export async function markTransferredAction(data: FormData) {
   return markTransferredImpl(data);
@@ -224,17 +232,29 @@ function adminAction(message: MessageKey, work: (actor: market.Actor, targetId: 
 }
 
 const approveListingImpl = adminAction("Listing approved.", (actor, target) => market.reviewListing(actor, target, true));
-const confirmPaymentImpl = adminAction("Payment confirmed.", market.confirmPayment);
+const agentHandedOverImpl = adminAction("Transfer recorded.", market.agentHandedOver);
 const releaseOrderImpl = adminAction("Order completed.", market.releaseOrder);
 const cancelOrderImpl = adminAction("Order cancelled.", market.cancelOrder);
 const resolveReportImpl = adminAction("Resolved.", market.resolveReport);
 const resolveContactImpl = adminAction("Resolved.", market.resolveContactMessage);
 
+const AI_NOT_SET_UP: ActionResult = { ok: false, message: "AI analysis is not set up yet." };
+
+export async function reviewListingWithAiAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  if (!aiEnabled()) return AI_NOT_SET_UP;
+  const parsed = id.safeParse(field(data, "id"));
+  if (!parsed.success) return INVALID;
+  return run("Analysis finished.", async () => {
+    if (!(await reviewListing(parsed.data))) throw new market.DomainError("AI could not check this listing.");
+  });
+}
+
 export async function approveListingAction(data: FormData) {
   return approveListingImpl(data);
 }
-export async function confirmPaymentAction(data: FormData) {
-  return confirmPaymentImpl(data);
+export async function agentHandedOverAction(data: FormData) {
+  return agentHandedOverImpl(data);
 }
 export async function releaseOrderAction(data: FormData) {
   return releaseOrderImpl(data);
@@ -264,8 +284,6 @@ export async function resolveTelegramAlertAction(data: FormData): Promise<Action
     await db.telegramAlert.update({ where: { id: parsed.data }, data: { resolved: true } });
   });
 }
-
-const AI_NOT_SET_UP: ActionResult = { ok: false, message: "AI analysis is not set up yet." };
 
 export async function analyzeTelegramChatAction(data: FormData): Promise<ActionResult> {
   await requireAdmin();
@@ -441,4 +459,94 @@ export async function setUserFlagAction(data: FormData): Promise<ActionResult> {
   return run("Updated.", () =>
     market.setUserFlags(admin, parsed.data.id, { [parsed.data.flag]: parsed.data.value === "true" })
   );
+}
+
+// ---- ዋሌት፣ የሻጭ ማረጋገጫ
+
+const MAX_UPLOAD_BYTES = 4_000_000;
+
+/** የተጫነውን ፎቶ (ደረሰኝ፣ መታወቂያ) አንብቦ ወደ WebP ይቀይራል፤ ከሌለ null። */
+async function uploadedImage(data: FormData, name: string): Promise<Uint8Array<ArrayBuffer> | null> {
+  const file = data.get(name);
+  if (!(file instanceof File) || file.size === 0) return null;
+  if (file.size > MAX_UPLOAD_BYTES) throw new market.DomainError("This image is too large.");
+  return (await optimizeScreenshot(file)).data;
+}
+
+const reviewSchema = z.object({ id, decision: z.enum(["approve", "reject"]), reason: z.string().trim().max(300).default("") });
+const reviewInput = (data: FormData) => reviewSchema.safeParse({ id: field(data, "id"), decision: field(data, "decision"), reason: field(data, "reason") });
+
+export async function createDepositAction(data: FormData): Promise<ActionResult> {
+  const user = await requireUser("/dashboard/wallet");
+  const parsed = z
+    .object({ amountEtb: money, method: inList(depositMethods), reference: z.string().trim().min(4).max(60) })
+    .safeParse({ amountEtb: field(data, "amountEtb"), method: field(data, "method"), reference: field(data, "reference") });
+  if (!parsed.success) return INVALID;
+  return run("We received your deposit. It will show in your wallet after an admin checks it.", async () => {
+    const receipt = await uploadedImage(data, "receipt");
+    if (!receipt) throw new market.DomainError("Add a photo of the receipt.");
+    await market.createDeposit(user, { ...parsed.data, receipt });
+  });
+}
+
+export async function reviewDepositAction(data: FormData): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const parsed = reviewInput(data);
+  if (!parsed.success) return INVALID;
+  const approve = parsed.data.decision === "approve";
+  return run(approve ? "Added to the user's wallet." : "Rejected.", () => market.reviewDeposit(admin, parsed.data.id, approve, parsed.data.reason));
+}
+
+export async function requestWithdrawalAction(data: FormData): Promise<ActionResult> {
+  const user = await requireUser("/dashboard/wallet");
+  const parsed = money.safeParse(field(data, "amountEtb"));
+  if (!parsed.success) return INVALID;
+  return run("Withdrawal requested. The money will be sent to your verified bank account.", () => market.requestWithdrawal(user, parsed.data));
+}
+
+export async function reviewWithdrawalAction(data: FormData): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const parsed = reviewInput(data);
+  if (!parsed.success) return INVALID;
+  const paid = parsed.data.decision === "approve";
+  return run(paid ? "Marked as paid." : "Rejected. The money was returned to the wallet.", () =>
+    market.reviewWithdrawal(admin, parsed.data.id, paid, parsed.data.reason)
+  );
+}
+
+const verificationSchema = z.object({
+  fullName: z.string().trim().min(3).max(120),
+  phone: z.string().trim().regex(/^(\+?251|0)[79]\d{8}$/),
+  idType: z.enum(["FAYDA", "PASSPORT"]),
+  idNumber: z.string().trim().min(4).max(40),
+  bankName: inList(banks),
+  bankAccountNumber: z.string().trim().regex(/^[0-9 ]{6,30}$/),
+  bankAccountName: z.string().trim().min(3).max(120),
+});
+
+export async function submitVerificationAction(data: FormData): Promise<ActionResult> {
+  const user = await requireUser("/dashboard/verification");
+  const parsed = verificationSchema.safeParse({
+    fullName: field(data, "fullName"),
+    phone: String(field(data, "phone") ?? "").replace(/[\s-]/g, ""),
+    idType: field(data, "idType"),
+    idNumber: field(data, "idNumber"),
+    bankName: field(data, "bankName"),
+    bankAccountNumber: field(data, "bankAccountNumber"),
+    bankAccountName: field(data, "bankAccountName"),
+  });
+  if (!parsed.success) return INVALID;
+  return run("Sent for review. We'll check that the names match.", async () => {
+    const idImage = await uploadedImage(data, "idImage");
+    if (!idImage) throw new market.DomainError("Add a photo of your ID.");
+    await market.submitVerification(user, { ...parsed.data, bankAccountNumber: parsed.data.bankAccountNumber.replace(/\s/g, "") }, idImage);
+  });
+}
+
+export async function reviewVerificationAction(data: FormData): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const parsed = reviewInput(data);
+  if (!parsed.success) return INVALID;
+  const approve = parsed.data.decision === "approve";
+  return run(approve ? "Seller verified." : "Rejected.", () => market.reviewVerification(admin, parsed.data.id, approve, parsed.data.reason));
 }

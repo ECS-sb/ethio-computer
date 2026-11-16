@@ -1,9 +1,21 @@
 import { ActionButton } from "@/components/action-form";
 import { LocaleLink } from "@/components/i18n-provider";
 import { resolveContactAction, resolveReportAction } from "@/lib/actions";
-import { formatDate, getPlatform, labelOf, reportReasons } from "@/lib/catalog";
+import { Badge } from "@/components/ui/badge";
+import { MAX_CHAT_STRIKES } from "@/lib/chat-guard";
+import { formatDate, formatDateTime, getPlatform, labelOf, reportReasons } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
-import { getAdminReports } from "@/lib/queries";
+import type { MessageKey } from "@/lib/messages";
+import { getAdminReports, getRecentChatViolations } from "@/lib/queries";
+
+const blockReasonLabels: Record<string, MessageKey> = {
+  PHONE: "Phone number",
+  EMAIL: "Email",
+  LINK: "Link",
+  USERNAME: "Username",
+  OTHER_APP: "Other app",
+  OFF_SITE_PAYMENT: "Payment outside the site",
+};
 import { requireAdmin } from "@/lib/session";
 
 export const generateMetadata = pageTitle("Reports");
@@ -11,7 +23,7 @@ export const generateMetadata = pageTitle("Reports");
 export default async function AdminReportsPage() {
   const t = await getT();
   await requireAdmin();
-  const { reports, contacts } = await getAdminReports();
+  const [{ reports, contacts }, violations] = await Promise.all([getAdminReports(), getRecentChatViolations()]);
 
   return (
     <>
@@ -58,6 +70,33 @@ export default async function AdminReportsPage() {
                 <ActionButton action={resolveContactAction} id={contact.id} variant="outline">
                   {t("Mark resolved")}
                 </ActionButton>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <section className="flex flex-col gap-4">
+        <h2 className="text-xl font-semibold">{t("Blocked chat messages")}</h2>
+        <p className="text-sm text-muted-foreground">
+          {t("These messages were not delivered. After {max} attempts the account is suspended automatically; unsuspending it from Users resets the count.", { max: MAX_CHAT_STRIKES })}
+        </p>
+        {violations.length === 0 ? (
+          <p className="rounded-xl bg-card/70 p-6 text-center text-muted-foreground ring-1 ring-foreground/10">{t("Nothing yet.")}</p>
+        ) : (
+          <ul className="flex flex-col gap-4">
+            {violations.map((violation) => (
+              <li key={violation.id} className="flex flex-col gap-2 rounded-xl bg-card/70 p-6 text-sm ring-1 ring-foreground/10">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold break-all">
+                    {violation.user.name} ({violation.user.email})
+                  </span>
+                  <Badge variant="secondary">{t(blockReasonLabels[violation.reason] ?? "Other app")}</Badge>
+                  <Badge variant={violation.user.suspended ? "destructive" : "outline"}>
+                    {violation.user.suspended ? t("Suspended") : t("Warnings: {count} of {max}", { count: violation.user.chatStrikes, max: MAX_CHAT_STRIKES })}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">{formatDateTime(violation.createdAt)}</span>
+                </div>
+                <p className="rounded-xl bg-secondary/60 p-4 break-words whitespace-pre-line">{violation.body}</p>
               </li>
             ))}
           </ul>

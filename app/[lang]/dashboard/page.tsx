@@ -1,19 +1,22 @@
-import { ShoppingBagIcon, StoreIcon } from "lucide-react";
+import { ShoppingBagIcon, StoreIcon, WalletIcon } from "lucide-react";
 import { LocaleLink } from "@/components/i18n-provider";
 import { buttonVariants } from "@/components/ui/button";
+import { VerifyPromo } from "@/components/verify-promo";
+import { formatPrice } from "@/lib/catalog";
 import { getT } from "@/lib/i18n-server";
-import { getBuyerOffers, getBuyerOrders, getSellerListings, getSellerOffers, getSellerOrders } from "@/lib/queries";
+import { getBuyerOffers, getBuyerOrders, getSellerListings, getSellerOffers, getSellerOrders, getWalletBalance } from "@/lib/queries";
 import { requireUser } from "@/lib/session";
 
 export default async function DashboardPage() {
   const t = await getT();
   const user = await requireUser("/dashboard");
-  const [buyerOffers, buyerOrders, listings, sellerOffers, sellerOrders] = await Promise.all([
+  const [buyerOffers, buyerOrders, listings, sellerOffers, sellerOrders, balance] = await Promise.all([
     getBuyerOffers(user.id),
     getBuyerOrders(user.id),
     getSellerListings(user.id),
     getSellerOffers(user.id),
     getSellerOrders(user.id),
+    getWalletBalance(user.id),
   ]);
   const open = (status: string) => !["RELEASED", "CANCELLED"].includes(status);
 
@@ -44,6 +47,21 @@ export default async function DashboardPage() {
       <h1 className="text-3xl font-semibold">
         {t("Welcome,")} <span className="text-gold">{user.name.split(" ")[0]}</span>
       </h1>
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-card/70 p-6 ring-1 ring-foreground/10">
+        <div className="flex items-center gap-4">
+          <span className="flex size-12 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/30">
+            <WalletIcon className="size-6" />
+          </span>
+          <div>
+            <p className="text-sm text-muted-foreground">{t("Wallet balance")}</p>
+            <p className="font-heading text-3xl font-bold text-primary">{formatPrice(t, balance)}</p>
+          </div>
+        </div>
+        <LocaleLink href="/dashboard/wallet" className={buttonVariants()}>
+          {t("Add money")}
+        </LocaleLink>
+      </section>
+      <VerifyPromo />
       <div className="grid gap-6 xl:grid-cols-2">
         {sections.map((section) => (
           <section key={section.href} className="flex flex-col gap-6 rounded-xl bg-card/70 p-6 ring-1 ring-foreground/10">

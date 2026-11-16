@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { PageIntro } from "@/components/brand";
 import { LocaleLink } from "@/components/i18n-provider";
 import { SellWizard } from "@/components/sell-wizard";
+import { VerifyPromo } from "@/components/verify-promo";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getT, pageTitle } from "@/lib/i18n-server";
@@ -45,6 +46,9 @@ export default async function SellPage() {
         }
         description={t("Before listing, check that the platform's rules allow transferring accounts.")}
       />
+      <Suspense fallback={null}>
+        <VerifyPromo />
+      </Suspense>
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_20rem]">
         <Suspense fallback={<Skeleton className="h-96 rounded-xl" />}>
           <SellGate />

@@ -31,12 +31,3 @@ export async function OrderProgress({ status }: { status: OrderStatusValue }) {
     </ol>
   );
 }
-
-export async function PaymentNotice() {
-  const t = await getT();
-  return (
-    <p role="note" className="rounded-xl bg-primary/15 p-4 text-sm ring-1 ring-primary/30">
-      {t("Online payment is not connected yet. Don't send money to anyone without instructions from an admin.")}
-    </p>
-  );
-}

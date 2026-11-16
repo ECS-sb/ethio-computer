@@ -2,7 +2,7 @@ import { ActionButton } from "@/components/action-form";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { setUserFlagAction } from "@/lib/actions";
-import { formatDate } from "@/lib/catalog";
+import { formatDate, formatPrice } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
 import { getAdminUsers } from "@/lib/queries";
 import { requireAdmin } from "@/lib/session";
@@ -25,6 +25,7 @@ export default async function AdminUsersPage() {
               <TableHead>{t("Phone")}</TableHead>
               <TableHead>{t("Member since")}</TableHead>
               <TableHead>{t("Listings / purchases")}</TableHead>
+              <TableHead>{t("Wallet")}</TableHead>
               <TableHead>{t("Status")}</TableHead>
               <TableHead>{t("Actions")}</TableHead>
             </TableRow>
@@ -43,10 +44,12 @@ export default async function AdminUsersPage() {
                 <TableCell>
                   {user._count.listings} / {user._count.purchases}
                 </TableCell>
+                <TableCell className="whitespace-nowrap">{formatPrice(t, user.walletBalanceEtb)}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {user.suspended ? <Badge variant="destructive">{t("Suspended")}</Badge> : null}
                     {user.verifiedSeller ? <Badge>{t("Verified seller")}</Badge> : null}
+                    {user.chatStrikes > 0 ? <Badge variant="outline">{t("Chat warnings: {count}", { count: user.chatStrikes })}</Badge> : null}
                   </div>
                 </TableCell>
                 <TableCell>

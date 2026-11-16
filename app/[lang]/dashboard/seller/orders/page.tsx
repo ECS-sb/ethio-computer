@@ -1,5 +1,6 @@
 import { ActionButton } from "@/components/action-form";
-import { OrderProgress, PaymentNotice } from "@/components/order-progress";
+import { HandoverNote } from "@/components/handover-note";
+import { OrderProgress } from "@/components/order-progress";
 import { markTransferredAction, openDisputeAction } from "@/lib/actions";
 import { formatPrice, getPlatform } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
@@ -31,13 +32,14 @@ export default async function SellerOrdersPage() {
                 </p>
               </div>
               <OrderProgress status={order.status} />
-              {order.status === "AWAITING_PAYMENT" ? <PaymentNotice /> : null}
-              {order.status === "PAID" ? (
-                <p className="text-sm text-muted-foreground">{t("Payment is confirmed. Transfer the account to the buyer, and don't send passwords through messages on this site.")}</p>
+              <HandoverNote handover={order.handover} role="seller" status={order.status} amountEtb={order.amountEtb} feePercent={order.feePercent} />
+              {order.status === "AWAITING_PAYMENT" ? <p className="text-sm text-muted-foreground">{t("Waiting for the buyer to pay from their wallet.")}</p> : null}
+              {order.status === "RELEASED" && order.payoutEtb !== null ? (
+                <p className="text-sm font-semibold text-primary">{t("{amount} was added to your wallet.", { amount: formatPrice(t, order.payoutEtb) })}</p>
               ) : null}
               {order.status === "PAID" || order.status === "TRANSFERRED" ? (
                 <div className="flex flex-wrap gap-2">
-                  {order.status === "PAID" ? (
+                  {order.status === "PAID" && order.handover === "SELF" ? (
                     <ActionButton action={markTransferredAction} id={order.id}>
                       {t("I transferred the account")}
                     </ActionButton>

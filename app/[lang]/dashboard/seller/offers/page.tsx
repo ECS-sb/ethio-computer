@@ -1,7 +1,8 @@
 import { ActionButton } from "@/components/action-form";
 import { Badge } from "@/components/ui/badge";
 import { acceptOfferAction, rejectOfferAction } from "@/lib/actions";
-import { formatDate, formatPrice, getPlatform, offerStatusLabels } from "@/lib/catalog";
+import { formatDate, formatPrice, getPlatform, handoverOptions, offerStatusLabels } from "@/lib/catalog";
+import { FEE_PERCENT, feeFor } from "@/lib/fees";
 import { getT, pageTitle } from "@/lib/i18n-server";
 import { getSellerOffers } from "@/lib/queries";
 import { requireUser } from "@/lib/session";
@@ -28,6 +29,13 @@ export default async function SellerOffersPage() {
                   <span dir="ltr">@{offer.username}</span> · {getPlatform(offer.platform)?.name} · {offer.buyerName} · {formatDate(offer.createdAt)}
                 </p>
                 <p className="text-xs text-muted-foreground">{t("Your asking price: {price}", { price: formatPrice(t, offer.askingEtb) })}</p>
+                <p className="text-xs">
+                  {t(handoverOptions.find((option) => option.value === offer.handover)?.label ?? "Complete it ourselves")} ·{" "}
+                  {t("You receive {payout} after the {fee} fee.", {
+                    payout: formatPrice(t, feeFor(offer.amountEtb, FEE_PERCENT[offer.handover]).payoutEtb),
+                    fee: formatPrice(t, feeFor(offer.amountEtb, FEE_PERCENT[offer.handover]).feeEtb),
+                  })}
+                </p>
                 {offer.note ? <p className="pt-2 text-sm break-words">{offer.note}</p> : null}
               </div>
               {offer.status === "PENDING" ? (

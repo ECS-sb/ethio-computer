@@ -20,13 +20,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createOfferAction, createReportAction, startConversationAction } from "@/lib/actions";
-import { formatPrice, reportReasons } from "@/lib/catalog";
+import { formatPrice, handoverOptions, reportReasons } from "@/lib/catalog";
+import { cn } from "@/lib/utils";
 
 export function ListingActions({ id, price, canOffer }: { id: string; price: number; canOffer: boolean }) {
   const t = useT();
   const [offerOpen, setOfferOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reason, setReason] = useState("fake");
+  const [handover, setHandover] = useState<string>("SELF");
 
   return (
     <div className="flex flex-col gap-2">
@@ -44,6 +46,34 @@ export function ListingActions({ id, price, canOffer }: { id: string; price: num
                 <Label htmlFor="offer-amount">{t("Your offer (ETB)")}</Label>
                 <Input id="offer-amount" name="amountEtb" type="number" min={1} step={1} required defaultValue={price} />
               </div>
+              <fieldset className="flex flex-col gap-2">
+                <legend className="pb-2 text-sm font-medium">{t("How do you want to complete it?")}</legend>
+                {handoverOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className={cn(
+                      "flex cursor-pointer items-start gap-4 rounded-xl p-4 ring-1 transition-colors",
+                      handover === option.value ? "bg-primary/10 ring-primary/60" : "bg-secondary/40 ring-foreground/10 hover:ring-foreground/30"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="handover"
+                      value={option.value}
+                      checked={handover === option.value}
+                      onChange={() => setHandover(option.value)}
+                      className="mt-1 accent-primary"
+                    />
+                    <span className="flex flex-col gap-1">
+                      <span className="text-sm font-semibold">
+                        {t(option.label)} · <span className="text-primary">{option.feePercent}%</span>
+                      </span>
+                      <span className="text-xs text-muted-foreground">{t(option.description)}</span>
+                    </span>
+                  </label>
+                ))}
+                <p className="text-xs text-muted-foreground">{t("The fee is paid by the seller. You pay only the agreed price, from your wallet.")}</p>
+              </fieldset>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="offer-note">{t("Message (optional)")}</Label>
                 <Textarea id="offer-note" name="note" maxLength={500} />

@@ -16,6 +16,38 @@ enum ListingStatus {
   ARCHIVED
 }
 
+/// ሽያጩ እንዴት ይጠናቀቃል፦ SELF ገዢና ሻጭ በራሳቸው (10%)፣ AGENT በድርጅቱ ኤጀንት በኩል (15%)። ክፍያውን ሻጩ ይከፍላል።
+enum HandoverMode {
+  SELF
+  AGENT
+}
+
+enum IdDocumentType {
+  FAYDA
+  PASSPORT
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PAID
+  REJECTED
+}
+
+enum WalletEntryType {
+  DEPOSIT
+  PURCHASE
+  REFUND
+  SALE
+  WITHDRAWAL
+  WITHDRAWAL_RETURNED
+}
+
 enum OfferStatus {
   PENDING
   ACCEPTED
@@ -34,26 +66,35 @@ enum OrderStatus {
 }
 
 model User {
-  id             String   @id
-  name           String
-  email          String   @unique
-  emailVerified  Boolean  @default(false)
-  image          String?
-  phone          String?
-  suspended      Boolean  @default(false)
-  verifiedSeller Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id               String   @id
+  name             String
+  email            String   @unique
+  emailVerified    Boolean  @default(false)
+  image            String?
+  phone            String?
+  suspended        Boolean  @default(false)
+  verifiedSeller   Boolean  @default(false)
+  /// የዋሌቱ ቀሪ ሂሳብ (ብር)። የሚቀየረው በlib/wallet.ts ብቻ ነው፤ እያንዳንዱ ለውጥ WalletEntry አለው።
+  walletBalanceEtb Int      @default(0)
+  /// ቻት ላይ የመገናኛ መረጃ ለመላክ የሞከረበት ብዛት (lib/chat-guard.ts)። 3 ሲደርስ በራሱ ይታገዳል።
+  chatStrikes      Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   sessions           Session[]
   accounts           Account[]
   listings           Listing[]
   offers             Offer[]
-  purchases          Order[]        @relation("OrderBuyer")
-  sales              Order[]        @relation("OrderSeller")
-  buyerConversations Conversation[] @relation("ConversationBuyer")
+  purchases          Order[]             @relation("OrderBuyer")
+  sales              Order[]             @relation("OrderSeller")
+  buyerConversations Conversation[]      @relation("ConversationBuyer")
   messages           Message[]
   reports            Report[]
+  sellerVerification SellerVerification?
+  walletEntries      WalletEntry[]
+  deposits           Deposit[]
+  withdrawals        Withdrawal[]
+  chatViolations     ChatViolation[]
 
   @@map("user")
 }
@@ -128,6 +169,9 @@ model Listing {
   verificationCode String
   status           ListingStatus @default(PENDING)
   rejectReason     String?
+  // AI ግምገማ (lib/listing-review.ts)፦ ስክሪንሾቶችንና መግለጫውን ያያል፤ ውሳኔው የአድሚኑ ነው።
+  aiReview         Json?
+  aiReviewedAt     DateTime?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -159,16 +203,17 @@ model ListingImage {
 }
 
 model Offer {
-  id        String      @id @default(cuid())
+  id        String       @id @default(cuid())
   listingId String
-  listing   Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listing   Listing      @relation(fields: [listingId], references: [id], onDelete: Cascade)
   buyerId   String
-  buyer     User        @relation(fields: [buyerId], references: [id], onDelete: Restrict)
+  buyer     User         @relation(fields: [buyerId], references: [id], onDelete: Restrict)
   amountEtb Int
-  note      String      @default("")
-  status    OfferStatus @default(PENDING)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  note      String       @default("")
+  handover  HandoverMode @default(SELF)
+  status    OfferStatus  @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   order Order?
 
@@ -178,19 +223,28 @@ model Offer {
 }
 
 model Order {
-  id        String      @id @default(cuid())
-  listingId String
-  listing   Listing     @relation(fields: [listingId], references: [id], onDelete: Restrict)
-  offerId   String      @unique
-  offer     Offer       @relation(fields: [offerId], references: [id], onDelete: Restrict)
-  buyerId   String
-  buyer     User        @relation("OrderBuyer", fields: [buyerId], references: [id], onDelete: Restrict)
-  sellerId  String
-  seller    User        @relation("OrderSeller", fields: [sellerId], references: [id], onDelete: Restrict)
-  amountEtb Int
-  status    OrderStatus @default(AWAITING_PAYMENT)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id         String       @id @default(cuid())
+  listingId  String
+  listing    Listing      @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  offerId    String       @unique
+  offer      Offer        @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  buyerId    String
+  buyer      User         @relation("OrderBuyer", fields: [buyerId], references: [id], onDelete: Restrict)
+  sellerId   String
+  seller     User         @relation("OrderSeller", fields: [sellerId], references: [id], onDelete: Restrict)
+  amountEtb  Int
+  handover   HandoverMode @default(SELF)
+  /// በትዕዛዙ ጊዜ የተወሰነው የድርጅቱ ክፍያ (%)፤ ሲጠናቀቅ ከሻጩ ገንዘብ ይቀነሳል።
+  feePercent Int          @default(10)
+  feeEtb     Int?
+  payoutEtb  Int?
+  /// ገዢው ከዋሌቱ የከፈለበት ጊዜ፤ ትዕዛዙ ከተሰረዘ ብሩ የሚመለሰው ይህ ካለ ብቻ ነው።
+  paidAt     DateTime?
+  status     OrderStatus  @default(AWAITING_PAYMENT)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  walletEntries WalletEntry[]
 
   @@index([buyerId])
   @@index([sellerId])
@@ -240,6 +294,109 @@ model Report {
   @@unique([listingId, reporterId])
   @@index([resolved])
   @@map("report")
+}
+
+/// ሻጩ ማንነቱን ያረጋግጣል፦ ስልክ፣ ፋይዳ ወይም ፓስፖርት፣ የባንክ ሂሳብ። ስሞቹ ከተስማሙ አድሚኑ ያጸድቃል፣ ባጅ ያገኛል።
+model SellerVerification {
+  id                String         @id @default(cuid())
+  userId            String         @unique
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName          String
+  phone             String
+  idType            IdDocumentType
+  idNumber          String
+  /// የመታወቂያው ፎቶ (WebP)፤ የሚታየው ለአድሚን ብቻ ነው።
+  idImage           Bytes
+  bankName          String
+  bankAccountNumber String
+  bankAccountName   String
+  status            ReviewStatus   @default(PENDING)
+  rejectReason      String?
+  reviewedAt        DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([status, createdAt])
+  @@map("seller_verification")
+}
+
+/// ተጠቃሚው ወደ ድርጅቱ ሂሳብ የላከውን ብር ያሳውቃል፤ አድሚኑ ሲያረጋግጥ ዋሌቱ ላይ ይገባል።
+model Deposit {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  amountEtb    Int
+  method       String
+  reference    String
+  receipt      Bytes?
+  status       ReviewStatus @default(PENDING)
+  rejectReason String?
+  reviewedAt   DateTime?
+  createdAt    DateTime     @default(now())
+
+  walletEntries WalletEntry[]
+
+  /// አንድ ደረሰኝ ሁለት ጊዜ እንዳይቆጠር።
+  @@unique([method, reference])
+  @@index([status, createdAt])
+  @@index([userId])
+  @@map("deposit")
+}
+
+/// ሻጩ ከዋሌቱ ወደ የተረጋገጠው የባንክ ሂሳቡ ብር ያወጣል። ብሩ ሲጠየቅ ወዲያው ይያዛል፤ ከተከለከለ ይመለሳል።
+model Withdrawal {
+  id                String           @id @default(cuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  amountEtb         Int
+  bankName          String
+  bankAccountNumber String
+  bankAccountName   String
+  status            WithdrawalStatus @default(PENDING)
+  rejectReason      String?
+  reviewedAt        DateTime?
+  createdAt         DateTime         @default(now())
+
+  walletEntries WalletEntry[]
+
+  @@index([status, createdAt])
+  @@index([userId])
+  @@map("withdrawal")
+}
+
+/// የዋሌቱ እያንዳንዱ እንቅስቃሴ (ገቢ +፣ ወጪ −) እና ከዚያ በኋላ የቀረው ሂሳብ።
+model WalletEntry {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  type         WalletEntryType
+  amountEtb    Int
+  balanceAfter Int
+  orderId      String?
+  order        Order?          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  depositId    String?
+  deposit      Deposit?        @relation(fields: [depositId], references: [id], onDelete: Restrict)
+  withdrawalId String?
+  withdrawal   Withdrawal?     @relation(fields: [withdrawalId], references: [id], onDelete: Restrict)
+  createdAt    DateTime        @default(now())
+
+  @@index([userId, createdAt])
+  @@map("wallet_entry")
+}
+
+/// ቻት ላይ የታገደ መልዕክት (ስልክ፣ ሊንክ፣ username፣ ሌላ መተግበሪያ)። ለተቀባዩ አልደረሰም።
+model ChatViolation {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversationId String?
+  body           String
+  reason         String
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId])
+  @@map("chat_violation")
 }
 
 model ContactMessage {
@@ -323,33 +480,33 @@ model TelegramConnection {
 
 /// ከአንድ ደንበኛ ጋር ያለ ቻት። chatId የቴሌግራሙ የደንበኛ መለያ ነው።
 model TelegramChat {
-  id             String             @id @default(cuid())
-  connectionId   String
-  connection     TelegramConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-  chatId         BigInt
-  name           String
-  username       String?
-  lastMessageAt  DateTime
-  lastDirection  TelegramDirection
-  lastInboundAt  DateTime?
-  lastOutboundAt DateTime?
+  id                    String             @id @default(cuid())
+  connectionId          String
+  connection            TelegramConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  chatId                BigInt
+  name                  String
+  username              String?
+  lastMessageAt         DateTime
+  lastDirection         TelegramDirection
+  lastInboundAt         DateTime?
+  lastOutboundAt        DateTime?
   /// Claude የጻፈው የቻቱ አጭር ማጠቃለያ እና የተተነተነበት ጊዜ
-  aiSummary      String?
-  analyzedAt     DateTime?
+  aiSummary             String?
+  analyzedAt            DateTime?
   /// ደንበኛው ያጋራቸው ዝርዝሮች (ስልክ፣ ኢሜይል፣ አካውንቶች፣ ለሽያጭ ያመጣቸው)፤ ቅርጹ በlib/telegram/profile.ts ውስጥ ነው።
-  profile        Json?
+  profile               Json?
   /// በቁልፍ ቃል ወይም በAI የተገኙ ርዕሶች፤ ለምሳሌ "withdrawal" (ከቲክቶክ ገንዘብ ማውጣት፣ የPayPal/ዶላር ምንዛሬ)
-  tags           String[]           @default([])
+  tags                  String[]           @default([])
   /// AI ያዘጋጀው የመልስ ሀሳብ እና የሚመልሰው የሰውየው መልዕክት (አዲስ መልዕክት ሲመጣ አዲስ ሀሳብ ይዘጋጃል)
   suggestedReply        String?
   suggestedForMessageId String?
   suggestedAt           DateTime?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 
-  messages TelegramMessage[]
-  alerts   TelegramAlert[]
-  deals    TelegramDeal[]
+  messages       TelegramMessage[]
+  alerts         TelegramAlert[]
+  deals          TelegramDeal[]
   /// ይህ ሰው ለድርጅቱ የሸጣቸው (ሻጭ) እና ከድርጅቱ የገዛቸው (ገዢ) ቻናሎች
   channelsSold   TelegramChannel[] @relation("ChannelSeller")
   channelsBought TelegramChannel[] @relation("ChannelBuyer")
@@ -361,27 +518,27 @@ model TelegramChat {
 }
 
 model TelegramMessage {
-  id           String            @id @default(cuid())
-  chatId       String
-  chat         TelegramChat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  messageId    Int
-  direction    TelegramDirection
-  senderName   String
-  viaBot       Boolean           @default(false)
-  text         String            @default("")
-  mediaType    String?
-  mimeType     String?
-  fileId       String?
-  sentAt       DateTime
-  editedAt     DateTime?
-  previousText String?
-  deletedAt    DateTime?
+  id            String            @id @default(cuid())
+  chatId        String
+  chat          TelegramChat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  messageId     Int
+  direction     TelegramDirection
+  senderName    String
+  viaBot        Boolean           @default(false)
+  text          String            @default("")
+  mediaType     String?
+  mimeType      String?
+  fileId        String?
+  sentAt        DateTime
+  editedAt      DateTime?
+  previousText  String?
+  deletedAt     DateTime?
   /// ከዌብሳይቱ የተላከ ከሆነ የላከው ሰራተኛ (ከስልክ የተላከ መልዕክት ይህ የለውም፤ ቴሌግራም ዲቫይሱን አይነግርም)
-  sentByUserId String?
-  sentByName   String?
+  sentByUserId  String?
+  sentByName    String?
   /// "ለገዢው ላክ"፦ ከሌላኛው ቻት (ለምሳሌ ከሻጩ) ተወስዶ የተላከበት መልዕክት
   relayedFromId String?
-  createdAt    DateTime          @default(now())
+  createdAt     DateTime          @default(now())
 
   alerts    TelegramAlert[]
   receipt   TelegramReceipt?

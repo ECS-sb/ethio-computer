@@ -12,7 +12,7 @@ const MAX_SIDE = 1600;
 const QUALITIES = [0.88, 0.7, 0.5];
 
 /** ምስሉ ወደ አገልጋይ ከመላኩ በፊት በስልኩ ላይ ይቀንሳል፣ ሜታዳታውም ይጠፋል። */
-async function shrink(file: File): Promise<File> {
+export async function shrinkImage(file: File): Promise<File> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
@@ -44,7 +44,7 @@ export function ScreenshotPicker({ files, onChange }: { files: File[]; onChange:
     const added: File[] = [];
     for (const file of picked.slice(0, MAX_SCREENSHOTS - files.length)) {
       try {
-        added.push(await shrink(file));
+        added.push(await shrinkImage(file));
       } catch {
         toast.error(t("This image couldn't be read. Use a JPG, PNG or WebP file."));
       }

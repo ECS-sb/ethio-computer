@@ -78,11 +78,12 @@ function rangeFilter(ranges: typeof followerRanges, value?: string): Prisma.IntF
   return { gte: range.min, ...(range.max === null ? {} : { lt: range.max }) };
 }
 
-function orderFor(sort?: string): Prisma.ListingOrderByWithRelationInput {
-  if (sort === "price-asc") return { priceEtb: "asc" };
-  if (sort === "price-desc") return { priceEtb: "desc" };
-  if (sort === "followers-desc") return { followers: "desc" };
-  return { createdAt: "desc" };
+function orderFor(sort?: string): Prisma.ListingOrderByWithRelationInput[] {
+  if (sort === "price-asc") return [{ priceEtb: "asc" }];
+  if (sort === "price-desc") return [{ priceEtb: "desc" }];
+  if (sort === "followers-desc") return [{ followers: "desc" }];
+  // ነባሪው ቅደም ተከተል፦ የተረጋገጡ ሻጮች ማስታወቂያዎች መጀመሪያ (ቶሎ እንዲሸጡ)፣ ከዚያ አዲሶቹ።
+  return [{ seller: { verifiedSeller: "desc" } }, { createdAt: "desc" }];
 }
 
 export async function searchListings(filters: ListingFilters) {
@@ -114,7 +115,7 @@ export async function searchListings(filters: ListingFilters) {
     db.listing.findMany({
       where,
       select: publicSelect,
-      orderBy: [{ status: "asc" }, orderFor(filters.sort)],
+      orderBy: [{ status: "asc" }, ...orderFor(filters.sort)],
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
@@ -127,7 +128,7 @@ export async function getFeaturedListings(take = 6) {
   const rows = await db.listing.findMany({
     where: { status: "APPROVED", seller: { suspended: false } },
     select: publicSelect,
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ seller: { verifiedSeller: "desc" } }, { createdAt: "desc" }],
     take,
   });
   return rows.map(toPublic);
@@ -397,8 +398,8 @@ export async function getAdminOrders() {
     take: 100,
     include: {
       listing: { select: { platform: true, username: true } },
-      buyer: { select: { name: true, email: true } },
-      seller: { select: { name: true, email: true } },
+      buyer: { select: { name: true, email: true, phone: true } },
+      seller: { select: { name: true, email: true, phone: true } },
     },
   });
 }
@@ -414,6 +415,8 @@ export async function getAdminUsers() {
       phone: true,
       suspended: true,
       verifiedSeller: true,
+      chatStrikes: true,
+      walletBalanceEtb: true,
       createdAt: true,
       _count: { select: { listings: true, purchases: true } },
     },
@@ -430,4 +433,105 @@ export async function getAdminReports() {
     db.contactMessage.findMany({ where: { resolved: false }, orderBy: { createdAt: "asc" } }),
   ]);
   return { reports, contacts };
+}
+
+// ---- ዋሌት (ፎቶዎቹ/ባይቶቹ እዚህ አይመጡም፤ ለአድሚን በ/api/admin-files ብቻ ይቀርባሉ)
+
+export async function getWallet(userId: string) {
+  const [user, entries, deposits, withdrawals, verification] = await Promise.all([
+    db.user.findUniqueOrThrow({ where: { id: userId }, select: { walletBalanceEtb: true, verifiedSeller: true } }),
+    db.walletEntry.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 50 }),
+    db.deposit.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: { id: true, amountEtb: true, method: true, reference: true, status: true, rejectReason: true, createdAt: true },
+    }),
+    db.withdrawal.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: { id: true, amountEtb: true, bankName: true, bankAccountNumber: true, status: true, rejectReason: true, createdAt: true },
+    }),
+    db.sellerVerification.findUnique({ where: { userId }, select: { status: true, bankName: true, bankAccountNumber: true, bankAccountName: true } }),
+  ]);
+  return { balanceEtb: user.walletBalanceEtb, verifiedSeller: user.verifiedSeller, entries, deposits, withdrawals, verification };
+}
+
+export async function getWalletBalance(userId: string) {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { walletBalanceEtb: true } });
+  return user?.walletBalanceEtb ?? 0;
+}
+
+export async function getVerification(userId: string) {
+  const [user, verification] = await Promise.all([
+    db.user.findUniqueOrThrow({ where: { id: userId }, select: { verifiedSeller: true } }),
+    db.sellerVerification.findUnique({
+      where: { userId },
+      select: {
+        status: true,
+        rejectReason: true,
+        fullName: true,
+        phone: true,
+        idType: true,
+        idNumber: true,
+        bankName: true,
+        bankAccountNumber: true,
+        bankAccountName: true,
+      },
+    }),
+  ]);
+  return { verifiedSeller: user.verifiedSeller, verification };
+}
+
+export async function getChatStrikes(userId: string) {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { chatStrikes: true } });
+  return user?.chatStrikes ?? 0;
+}
+
+export async function getPendingDeposits() {
+  return db.deposit.findMany({
+    where: { status: "PENDING" },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      amountEtb: true,
+      method: true,
+      reference: true,
+      createdAt: true,
+      user: { select: { name: true, email: true, walletBalanceEtb: true } },
+    },
+  });
+}
+
+export async function getPendingWithdrawals() {
+  return db.withdrawal.findMany({
+    where: { status: "PENDING" },
+    orderBy: { createdAt: "asc" },
+    include: { user: { select: { name: true, email: true, phone: true } } },
+  });
+}
+
+export async function getPendingVerifications() {
+  return db.sellerVerification.findMany({
+    where: { status: "PENDING" },
+    orderBy: { createdAt: "asc" },
+    omit: { idImage: true },
+    include: { user: { select: { name: true, email: true } } },
+  });
+}
+
+export async function getRecentChatViolations(take = 50) {
+  return db.chatViolation.findMany({
+    orderBy: { createdAt: "desc" },
+    take,
+    include: { user: { select: { name: true, email: true, chatStrikes: true, suspended: true } } },
+  });
+}
+
+/** የአድሚን ፋይሎች፦ የተቀማጭ ደረሰኝ ወይም የመታወቂያ ፎቶ። */
+export async function getAdminFile(kind: string, id: string): Promise<Uint8Array | null> {
+  if (kind === "deposit") return (await db.deposit.findUnique({ where: { id }, select: { receipt: true } }))?.receipt ?? null;
+  if (kind === "verification") return (await db.sellerVerification.findUnique({ where: { id }, select: { idImage: true } }))?.idImage ?? null;
+  return null;
 }

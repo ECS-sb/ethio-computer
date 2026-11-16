@@ -1,7 +1,9 @@
 import { ActionButton } from "@/components/action-form";
 import { OrderProgress } from "@/components/order-progress";
-import { cancelOrderAction, confirmPaymentAction, releaseOrderAction } from "@/lib/actions";
-import { formatDate, formatPrice, getPlatform } from "@/lib/catalog";
+import { Badge } from "@/components/ui/badge";
+import { agentHandedOverAction, cancelOrderAction, releaseOrderAction } from "@/lib/actions";
+import { formatDate, formatPrice, getPlatform, handoverOptions } from "@/lib/catalog";
+import { feeFor } from "@/lib/fees";
 import { getT, pageTitle } from "@/lib/i18n-server";
 import { getAdminOrders } from "@/lib/queries";
 import { requireAdmin } from "@/lib/session";
@@ -29,18 +31,28 @@ export default async function AdminOrdersPage() {
                 <p className="text-sm text-muted-foreground">
                   {formatPrice(t, order.amountEtb)} · {formatDate(order.createdAt)}
                 </p>
-                <p className="text-sm text-muted-foreground break-all">
-                  {t("Buyer:")} {order.buyer.name} ({order.buyer.email})
+                <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  <Badge variant={order.handover === "AGENT" ? "default" : "secondary"}>
+                    {t(handoverOptions.find((option) => option.value === order.handover)?.label ?? "Complete it ourselves")}
+                  </Badge>
+                  {t("Fee {percent}%: {fee} · Seller gets {payout}", {
+                    percent: order.feePercent,
+                    fee: formatPrice(t, feeFor(order.amountEtb, order.feePercent).feeEtb),
+                    payout: formatPrice(t, feeFor(order.amountEtb, order.feePercent).payoutEtb),
+                  })}
                 </p>
                 <p className="text-sm text-muted-foreground break-all">
-                  {t("Seller:")} {order.seller.name} ({order.seller.email})
+                  {t("Buyer:")} {order.buyer.name} ({order.buyer.email}){order.buyer.phone ? <span dir="ltr"> · {order.buyer.phone}</span> : null}
+                </p>
+                <p className="text-sm text-muted-foreground break-all">
+                  {t("Seller:")} {order.seller.name} ({order.seller.email}){order.seller.phone ? <span dir="ltr"> · {order.seller.phone}</span> : null}
                 </p>
               </div>
               <OrderProgress status={order.status} />
               <div className="flex flex-wrap gap-2">
-                {order.status === "AWAITING_PAYMENT" ? (
-                  <ActionButton action={confirmPaymentAction} id={order.id}>
-                    {t("Payment received")}
+                {order.status === "PAID" && order.handover === "AGENT" ? (
+                  <ActionButton action={agentHandedOverAction} id={order.id}>
+                    {t("Agent handed the account to the buyer")}
                   </ActionButton>
                 ) : null}
                 {order.status === "CONFIRMED" || order.status === "DISPUTED" ? (

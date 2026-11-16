@@ -9,6 +9,7 @@ import { formatCount, getPlatform, listingStatusLabels } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
 import { getSellerListings } from "@/lib/queries";
 import { requireUser } from "@/lib/session";
+import { VerifyPromo } from "@/components/verify-promo";
 
 export const generateMetadata = pageTitle("My listings");
 
@@ -25,6 +26,7 @@ export default async function SellerListingsPage() {
           {t("New listing")}
         </LocaleLink>
       </div>
+      <VerifyPromo />
       {listings.length === 0 ? (
         <p className="rounded-xl bg-card/70 p-12 text-center text-muted-foreground ring-1 ring-foreground/10">{t("You haven't posted any listings yet.")}</p>
       ) : (

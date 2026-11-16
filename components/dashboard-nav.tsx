@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import {
+  BadgeCheckIcon,
   BadgeDollarSignIcon,
   ChartNoAxesCombinedIcon,
   FlagIcon,
@@ -17,6 +18,7 @@ import {
   StoreIcon,
   UserCogIcon,
   UsersIcon,
+  WalletIcon,
   type LucideIcon,
 } from "lucide-react";
 import { LocaleLink, useT } from "@/components/i18n-provider";
@@ -47,6 +49,8 @@ const groups: Record<"user" | "admin", Group[]> = {
     {
       title: "Account",
       items: [
+        { href: "/dashboard/wallet", label: "Wallet", icon: WalletIcon },
+        { href: "/dashboard/verification", label: "Seller verification", icon: BadgeCheckIcon },
         { href: "/dashboard/messages", label: "Messages", icon: MessageCircleIcon },
         { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
       ],
@@ -59,6 +63,8 @@ const groups: Record<"user" | "admin", Group[]> = {
         { href: "/admin", label: "Overview", icon: LayoutDashboardIcon },
         { href: "/admin/listings", label: "Listing review", icon: ListChecksIcon },
         { href: "/admin/orders", label: "Orders", icon: ReceiptIcon },
+        { href: "/admin/wallet", label: "Deposits & withdrawals", icon: WalletIcon },
+        { href: "/admin/verifications", label: "Seller verification", icon: BadgeCheckIcon },
         { href: "/admin/users", label: "Users", icon: UsersIcon },
         { href: "/admin/reports", label: "Reports", icon: FlagIcon },
         { href: "/admin/telegram", label: "Telegram", icon: SendIcon },

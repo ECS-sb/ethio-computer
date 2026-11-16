@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ArrowLeftIcon, SendIcon } from "lucide-react";
+import { ArrowLeftIcon, SendIcon, ShieldAlertIcon } from "lucide-react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { LocaleLink } from "@/components/i18n-provider";
@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { sendMessageAction } from "@/lib/actions";
 import { getPlatform } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
-import { getConversation } from "@/lib/queries";
+import { MAX_CHAT_STRIKES } from "@/lib/chat-guard";
+import { getChatStrikes, getConversation } from "@/lib/queries";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +18,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   const t = await getT();
   const { id } = await params;
   const user = await requireUser(`/dashboard/messages/${id}`);
-  const conversation = await getConversation(id, user.id);
+  const [conversation, strikes] = await Promise.all([getConversation(id, user.id), getChatStrikes(user.id)]);
   if (!conversation) notFound();
 
   return (
@@ -37,6 +38,19 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
             <span dir="ltr">@{conversation.handle}</span> · {getPlatform(conversation.platform)?.name}
           </LocaleLink>
         </header>
+        <div
+          role="note"
+          className={cn(
+            "flex items-start gap-2 rounded-xl p-4 text-xs ring-1",
+            strikes > 0 ? "bg-destructive/10 ring-destructive/40" : "bg-primary/10 ring-primary/30"
+          )}
+        >
+          <ShieldAlertIcon className={cn("size-4 shrink-0", strikes > 0 ? "text-destructive" : "text-primary")} />
+          <p>
+            {t("Keep the whole deal on Ethio Market. Messages with phone numbers, usernames, links, emails or other apps are not delivered, and the third attempt suspends your account automatically.")}{" "}
+            {strikes > 0 ? <strong>{t("Your warnings: {count} of {max}.", { count: strikes, max: MAX_CHAT_STRIKES })}</strong> : null}
+          </p>
+        </div>
         <div className="flex min-h-72 flex-col gap-2">
           {conversation.messages.length === 0 ? <p className="m-auto text-sm text-muted-foreground">{t("Start the conversation.")}</p> : null}
           {conversation.messages.map((message) => (

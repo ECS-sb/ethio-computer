@@ -17,7 +17,7 @@ export function aiEnabled(): boolean {
 }
 
 let client: Anthropic | null = null;
-function anthropic(): Anthropic {
+export function anthropic(): Anthropic {
   client ??= new Anthropic();
   return client;
 }

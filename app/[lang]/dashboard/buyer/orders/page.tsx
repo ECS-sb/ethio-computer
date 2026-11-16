@@ -1,9 +1,13 @@
+import { WalletIcon } from "lucide-react";
 import { ActionButton } from "@/components/action-form";
-import { OrderProgress, PaymentNotice } from "@/components/order-progress";
-import { confirmReceivedAction, openDisputeAction } from "@/lib/actions";
+import { LocaleLink } from "@/components/i18n-provider";
+import { HandoverNote } from "@/components/handover-note";
+import { OrderProgress } from "@/components/order-progress";
+import { buttonVariants } from "@/components/ui/button";
+import { confirmReceivedAction, openDisputeAction, payOrderAction } from "@/lib/actions";
 import { formatPrice, getPlatform } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
-import { getBuyerOrders } from "@/lib/queries";
+import { getBuyerOrders, getWalletBalance } from "@/lib/queries";
 import { requireUser } from "@/lib/session";
 
 export const generateMetadata = pageTitle("My purchases");
@@ -11,7 +15,7 @@ export const generateMetadata = pageTitle("My purchases");
 export default async function BuyerOrdersPage() {
   const t = await getT();
   const user = await requireUser("/dashboard/buyer/orders");
-  const orders = await getBuyerOrders(user.id);
+  const [orders, balance] = await Promise.all([getBuyerOrders(user.id), getWalletBalance(user.id)]);
 
   return (
     <>
@@ -31,7 +35,28 @@ export default async function BuyerOrdersPage() {
                 </p>
               </div>
               <OrderProgress status={order.status} />
-              {order.status === "AWAITING_PAYMENT" ? <PaymentNotice /> : null}
+              <HandoverNote handover={order.handover} role="buyer" status={order.status} />
+              {order.status === "AWAITING_PAYMENT" ? (
+                <div className="flex flex-col gap-4 rounded-xl bg-primary/10 p-4 ring-1 ring-primary/30">
+                  <p className="flex items-center gap-2 text-sm">
+                    <WalletIcon className="size-4 text-primary" />
+                    {t("Wallet balance: {amount}", { amount: formatPrice(t, balance) })}
+                  </p>
+                  {balance >= order.amountEtb ? (
+                    <ActionButton action={payOrderAction} id={order.id} className="w-fit">
+                      {t("Pay {amount} from wallet", { amount: formatPrice(t, order.amountEtb) })}
+                    </ActionButton>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-4">
+                      <p className="text-sm">{t("Add {amount} to your wallet to pay.", { amount: formatPrice(t, order.amountEtb - balance) })}</p>
+                      <LocaleLink href="/dashboard/wallet" className={buttonVariants({ size: "sm" })}>
+                        {t("Add money")}
+                      </LocaleLink>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">{t("The money is held by Ethio Market and reaches the seller only after you confirm the handover.")}</p>
+                </div>
+              ) : null}
               {order.status === "PAID" || order.status === "TRANSFERRED" ? (
                 <div className="flex flex-wrap gap-2">
                   {order.status === "TRANSFERRED" ? (
