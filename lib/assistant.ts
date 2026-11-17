@@ -44,7 +44,7 @@ Fees (paid by the seller; the buyer pays only the agreed price)
 
 Selling (/sell)
 1. Sign in and open the Sell page. Choose the platform, enter the details and price, and add 1 to 4 screenshots of the account's stats. Hide the account's name in the screenshots.
-2. You get a verification code (like EM-123456). Put it in the account's bio so we know the account is yours.
+2. You get a verification code (like EC-123456). Put it in the account's bio so we know the account is yours.
 3. An admin reviews and approves the listing. Then buyers can make offers; you accept or decline on Received offers (/dashboard/seller/offers).
 - Make sure the platform's rules allow transferring the account.
 

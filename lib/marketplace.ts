@@ -18,7 +18,7 @@ function assertAdmin(actor: Actor) {
 }
 
 function generateVerificationCode(): string {
-  return `EM-${randomInt(100000, 1000000)}`;
+  return `EC-${randomInt(100000, 1000000)}`;
 }
 
 export type ListingInput = {

@@ -16,7 +16,7 @@ import { PrismaClient } from "@/lib/generated/prisma/client";
 config({ path: ".env.local", quiet: true });
 config({ path: ".env", quiet: true });
 
-const SAMPLE_SELLER = { id: "sample-seller", email: "samples@ethiomarket.test", name: "Ethio Computer Samples" };
+const SAMPLE_SELLER = { id: "sample-seller", email: "samples@ethiocomputer.test", name: "Ethio Computer Samples" };
 const NOTE = "Sample listing for testing — not a real account.\nለሙከራ የቀረበ ናሙና ነው፤ እውነተኛ አካውንት አይደለም።";
 
 type Sample = {

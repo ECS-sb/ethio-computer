@@ -23,7 +23,7 @@
 | `TELEGRAM_ALLOWED_CONTACTS` | የድርጅቱ የራሱ ስልኮች፣ የቴሌግራም ስሞች እና የባንክ/ቴሌብር ሂሳቦች፣ በኮማ የተለዩ። እነዚህ ሲላኩ ማስጠንቀቂያ አይነሳም። ለምሳሌ፦ `0911223344, @EthiocomputerSchool, 1000123456789` |
 | `CRON_SECRET` | Vercel የዕለት ሪፖርቱን ሲጠራ የሚጠቀምበት ሚስጥር (እንደ webhook secret ያመንጩት) |
 | `TELEGRAM_REPORT_LOCALE` | `am` (ነባሪ) ወይም `en` |
-| `SITE_URL` | አማራጭ። በሪፖርቱ ውስጥ ላሉ ሊንኮች፣ ለምሳሌ `https://ethio-market.vercel.app`። ካልተሰጠ `BETTER_AUTH_URL` ይወሰዳል። |
+| `SITE_URL` | አማራጭ። በሪፖርቱ ውስጥ ላሉ ሊንኮች፣ ለምሳሌ `https://ethio-computer.vercel.app`። ካልተሰጠ `BETTER_AUTH_URL` ይወሰዳል። |
 
 > ⚠️ ማንም ሰው ለቦቱ `/start` ብሎ የራሱን chat ID ማግኘት ይችላል፤ ሪፖርት የሚደርሰው ግን `TELEGRAM_OWNER_CHAT_IDS` ውስጥ ላሉት ብቻ ነው።
 > የሽያጭ አካውንቱ የራሱ chat ID አያስገቡ፤ ሰራተኞች ያዩታል። የእርስዎን የግል አካውንት ይጠቀሙ።

@@ -1,4 +1,4 @@
-# Ethio Market — የሶሻል ሚዲያ አካውንት መሸጫ
+# Ethio Computer — የሶሻል ሚዲያ አካውንት መሸጫ
 
 ## ደንቦች (አትጣስ)
 - Next.js App Router + TypeScript strict
