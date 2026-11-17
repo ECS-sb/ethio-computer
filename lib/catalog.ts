@@ -46,10 +46,10 @@ export const contact = {
 export const schoolSocials: { platform: PlatformId; handle: string; url: string }[] = [
   { platform: "telegram", handle: "@ethiocss", url: "https://t.me/ethiocss" },
   { platform: "telegram", handle: "@ethiocomputerschool", url: "https://t.me/ethiocomputerschool" },
-  { platform: "youtube", handle: "", url: "" },
-  { platform: "tiktok", handle: "", url: "" },
-  { platform: "facebook", handle: "", url: "" },
-  { platform: "instagram", handle: "", url: "" },
+  // ከትምህርት ቤቱ ይፋዊ ዌብሳይት (ethiocomputer.school) የተወሰዱ። Facebook እዚያ አልተዘረዘረም።
+  { platform: "youtube", handle: "@EthioComputerSchool", url: "https://youtube.com/@EthioComputerSchool" },
+  { platform: "tiktok", handle: "@ethio_computer_school", url: "https://tiktok.com/@ethio_computer_school" },
+  { platform: "instagram", handle: "@ethio_computer", url: "https://instagram.com/ethio_computer" },
 ];
 
 export const categories: Option[] = [
