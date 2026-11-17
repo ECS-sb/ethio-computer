@@ -7,7 +7,10 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 function createClient() {
   // DATABASE_URL በNeon የpooler አድራሻ ነው፤ Vercel ሲያቆም ግንኙነቶቹ በትክክል እንዲዘጉ ይያያዛል።
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 5 });
+  // Neon ሲተኛ (scale-to-zero) ያረጁ ግንኙነቶችን ይዘጋል፤ የቆዩትን ቶሎ ጥሎ አዲስ ይከፍታል፣
+  // የተቋረጠ ግንኙነትም ሂደቱን አያቆምም ("Connection terminated unexpectedly")።
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 5, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 15_000 });
+  pool.on("error", (error) => console.warn("db pool:", error.message));
   attachDatabasePool(pool);
   return new PrismaClient({ adapter: new PrismaPg(pool) });
 }
