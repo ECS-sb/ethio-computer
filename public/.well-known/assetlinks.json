@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.ethiocomputer.app",
+      "sha256_cert_fingerprints": [
+        "9D:DD:52:CC:0B:86:B9:60:74:C5:DD:60:F9:2C:5B:F9:1F:EB:7F:18:0E:75:54:A5:BD:31:98:2F:07:02:B1:A7"
+      ]
+    }
+  }
+]
