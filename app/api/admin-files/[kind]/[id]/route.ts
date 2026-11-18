@@ -1,11 +1,15 @@
 import { getAdminFile } from "@/lib/queries";
-import { getCurrentUser } from "@/lib/session";
+import { getTelegramViewer } from "@/lib/telegram/access";
 
-/** የተቀማጭ ደረሰኝና የመታወቂያ ፎቶ ለአድሚን ብቻ ይታያሉ፤ ለሌሎች 404 (መኖራቸውም እንዳይታወቅ)። */
+/**
+ * የተቀማጭ ደረሰኝ ለአድሚኑና "Approve deposits" ለተፈቀደለት ሰራተኛ፣ የመታወቂያ ፎቶ ደግሞ "Verify sellers" ለተፈቀደለት ብቻ ይታያሉ።
+ * ለሌሎች 404 (መኖራቸውም እንዳይታወቅ)።
+ */
 export async function GET(_: Request, { params }: { params: Promise<{ kind: string; id: string }> }) {
-  const user = await getCurrentUser();
-  if (!user?.isAdmin || user.suspended) return new Response(null, { status: 404 });
+  const viewer = await getTelegramViewer();
   const { kind, id } = await params;
+  const allowed = (kind === "deposit" && viewer?.can.deposits) || (kind === "verification" && viewer?.can.verifications);
+  if (!allowed) return new Response(null, { status: 404 });
   const bytes = await getAdminFile(kind, id);
   if (!bytes) return new Response(null, { status: 404 });
   return new Response(new Uint8Array(bytes), {

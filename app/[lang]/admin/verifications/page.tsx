@@ -6,14 +6,14 @@ import { banks, formatDateTime, idTypes, labelOf } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
 import { namesMatch } from "@/lib/names";
 import { getPendingVerifications } from "@/lib/queries";
-import { requireAdmin } from "@/lib/session";
+import { requireStaff } from "@/lib/telegram/access";
 import { cn } from "@/lib/utils";
 
 export const generateMetadata = pageTitle("Seller verification");
 
 export default async function AdminVerificationsPage() {
   const t = await getT();
-  await requireAdmin();
+  await requireStaff("/admin/verifications", "verifications");
   const requests = await getPendingVerifications();
 
   return (

@@ -4,7 +4,7 @@ import { banks, depositMethods, formatDateTime, formatPrice, labelOf } from "@/l
 import { reviewDepositAction, reviewWithdrawalAction } from "@/lib/actions";
 import { getT, pageTitle } from "@/lib/i18n-server";
 import { getPendingDeposits, getPendingWithdrawals } from "@/lib/queries";
-import { requireAdmin } from "@/lib/session";
+import { requireStaff } from "@/lib/telegram/access";
 
 export const generateMetadata = pageTitle("Deposits & withdrawals");
 
@@ -13,13 +13,15 @@ const empty = "rounded-xl bg-card/70 p-12 text-center text-muted-foreground ring
 
 export default async function AdminWalletPage() {
   const t = await getT();
-  await requireAdmin();
-  const [deposits, withdrawals] = await Promise.all([getPendingDeposits(), getPendingWithdrawals()]);
+  const { can } = await requireStaff("/admin/wallet", "deposits", "withdrawals");
+  // ሰራተኛው የተፈቀደለትን ክፍል ብቻ ያያል፤ ሌላው ከdatabase እንኳ አይመጣም።
+  const [deposits, withdrawals] = await Promise.all([can.deposits ? getPendingDeposits() : null, can.withdrawals ? getPendingWithdrawals() : null]);
 
   return (
     <>
       <h1 className="text-3xl font-semibold">{t("Deposits & withdrawals")}</h1>
 
+      {deposits ? (
       <section className="flex flex-col gap-4">
         <h2 className="text-xl font-semibold">{t("Deposits to check ({count})", { count: deposits.length })}</h2>
         <p className="text-sm text-muted-foreground">{t("Check that the money reached our account with this transaction number before approving.")}</p>
@@ -57,7 +59,9 @@ export default async function AdminWalletPage() {
           ))
         )}
       </section>
+      ) : null}
 
+      {withdrawals ? (
       <section className="flex flex-col gap-4 pt-6">
         <h2 className="text-xl font-semibold">{t("Withdrawals to pay ({count})", { count: withdrawals.length })}</h2>
         <p className="text-sm text-muted-foreground">{t("The money is already taken from the wallet. Send it to this bank account, then mark it as paid. Rejecting returns it to the wallet.")}</p>
@@ -81,6 +85,7 @@ export default async function AdminWalletPage() {
           ))
         )}
       </section>
+      ) : null}
     </>
   );
 }

@@ -16,13 +16,13 @@ const blockReasonLabels: Record<string, MessageKey> = {
   OTHER_APP: "Other app",
   OFF_SITE_PAYMENT: "Payment outside the site",
 };
-import { requireAdmin } from "@/lib/session";
+import { requireStaff } from "@/lib/telegram/access";
 
 export const generateMetadata = pageTitle("Reports");
 
 export default async function AdminReportsPage() {
   const t = await getT();
-  await requireAdmin();
+  await requireStaff("/admin/reports", "reports");
   const [{ reports, contacts }, violations] = await Promise.all([getAdminReports(), getRecentChatViolations()]);
 
   return (

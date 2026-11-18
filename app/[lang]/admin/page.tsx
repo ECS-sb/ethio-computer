@@ -2,10 +2,18 @@ import { LocaleLink } from "@/components/i18n-provider";
 import { formatPrice } from "@/lib/catalog";
 import { getT } from "@/lib/i18n-server";
 import { getAdminStats } from "@/lib/queries";
+import { redirect } from "next/navigation";
+import { localePath } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 import { requireAdmin } from "@/lib/session";
+import { getTelegramViewer } from "@/lib/telegram/access";
+import { staffPages } from "@/lib/telegram/permissions";
 
 export default async function AdminPage() {
   const t = await getT();
+  // ሰራተኛ ማጠቃለያውን አያይም፤ ከተፈቀዱለት ገጾች ወደ መጀመሪያው ይሄዳል።
+  const viewer = await getTelegramViewer();
+  if (viewer && !viewer.isAdmin) redirect(localePath(await getLocale(), staffPages(viewer.can)[0]));
   await requireAdmin();
   const stats = await getAdminStats();
   const tiles = [

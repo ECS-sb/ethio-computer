@@ -28,6 +28,9 @@ async function LoginContent({ searchParams }: { searchParams: Params }) {
         </p>
       ) : null}
       <GoogleSignIn next={next} />
+      <LocaleLink href="/staff" className="text-center text-sm text-muted-foreground underline hover:text-foreground">
+        {t("Staff? Sign in with email and password")}
+      </LocaleLink>
     </div>
   );
 }

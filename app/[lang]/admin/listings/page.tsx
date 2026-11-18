@@ -7,7 +7,7 @@ import { getT, pageTitle } from "@/lib/i18n-server";
 import { readListingReview, type ListingReview } from "@/lib/listing-review";
 import type { MessageKey } from "@/lib/messages";
 import { getPendingListings } from "@/lib/queries";
-import { requireAdmin } from "@/lib/session";
+import { requireStaff } from "@/lib/telegram/access";
 import { aiEnabled } from "@/lib/telegram/ai";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +15,7 @@ export const generateMetadata = pageTitle("Listing review");
 
 export default async function AdminListingsPage() {
   const t = await getT();
-  await requireAdmin();
+  await requireStaff("/admin/listings", "listings");
   const listings = await getPendingListings();
 
   return (

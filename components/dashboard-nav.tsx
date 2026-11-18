@@ -9,6 +9,7 @@ import {
   HandCoinsIcon,
   LayoutDashboardIcon,
   ListChecksIcon,
+  KeyRoundIcon,
   ListIcon,
   MessageCircleIcon,
   ReceiptIcon,
@@ -27,7 +28,8 @@ import { stripLocale } from "@/lib/i18n";
 import type { MessageKey } from "@/lib/messages";
 import { cn } from "@/lib/utils";
 
-type Group = { title: MessageKey; items: { href: string; label: MessageKey; icon: LucideIcon }[] };
+/** staffOnly፦ ለሰራተኞች ብቻ የሚታይ (አድሚኑ በGoogle ስለሚገባ ፓስዎርድ የለውም)። */
+type Group = { title: MessageKey; items: { href: string; label: MessageKey; icon: LucideIcon; staffOnly?: boolean }[] };
 
 const groups: Record<"user" | "admin", Group[]> = {
   user: [
@@ -71,12 +73,13 @@ const groups: Record<"user" | "admin", Group[]> = {
         { href: "/admin/telegram/sales", label: "Telegram sales", icon: BadgeDollarSignIcon },
         { href: "/admin/telegram/channels", label: "Channels & profit", icon: ChartNoAxesCombinedIcon },
         { href: "/admin/telegram/staff", label: "Staff", icon: UserCogIcon },
+        { href: "/admin/password", label: "Change password", icon: KeyRoundIcon, staffOnly: true },
       ],
     },
   ],
 };
 
-/** only፦ ሰራተኞች (አድሚን ያልሆኑ) የተፈቀደላቸውን የቴሌግራም ገጾች ብቻ ያያሉ፤ የቡድኑ ርዕስ አይታይም። */
+/** only፦ ሰራተኞች (አድሚን ያልሆኑ) የተፈቀደላቸውን ገጾች ብቻ ያያሉ፤ የቡድኑ ርዕስ አይታይም። */
 export function DashboardNav({ area, only }: { area: keyof typeof groups; only?: string[] }) {
   const t = useT();
   const pathname = stripLocale(usePathname());
@@ -86,7 +89,7 @@ export function DashboardNav({ area, only }: { area: keyof typeof groups; only?:
   return (
     <nav aria-label={t("Dashboard")} className="flex gap-4 overflow-x-auto [scrollbar-width:none] lg:flex-col">
       {groups[area]
-        .map((group) => (only ? { ...group, items: group.items.filter((item) => only.includes(item.href)) } : group))
+        .map((group) => ({ ...group, items: group.items.filter((item) => (only ? only.includes(item.href) : !item.staffOnly)) }))
         .filter((group) => group.items.length > 0)
         .map((group) => (
         <div key={group.title} className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-stretch">

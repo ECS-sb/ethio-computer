@@ -5,14 +5,19 @@ import { setUserFlagAction } from "@/lib/actions";
 import { formatDate, formatPrice } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
 import { getAdminUsers } from "@/lib/queries";
-import { requireAdmin } from "@/lib/session";
+import { isAdminEmail } from "@/lib/session";
+import { requireStaff } from "@/lib/telegram/access";
+import { staffEmails } from "@/lib/telegram/staff";
 
 export const generateMetadata = pageTitle("Users");
 
 export default async function AdminUsersPage() {
   const t = await getT();
-  const admin = await requireAdmin();
-  const users = await getAdminUsers();
+  const viewer = await requireStaff("/admin/users", "users");
+  const [users, staff] = await Promise.all([getAdminUsers(), viewer.isAdmin ? null : staffEmails()]);
+  // ሰራተኛ ራሱን፣ አድሚኑን ወይም ሌላ ሰራተኛን መቀየር አይችልም (actions.ts ደግሞ ይፈትሻል)።
+  const locked = (user: { id: string; email: string }) =>
+    user.id === viewer.userId || (staff !== null && (isAdminEmail(user.email) || staff.has(user.email.toLowerCase())));
 
   return (
     <>
@@ -53,6 +58,7 @@ export default async function AdminUsersPage() {
                   </div>
                 </TableCell>
                 <TableCell>
+                  {locked(user) && !viewer.isAdmin ? null : (
                   <div className="flex gap-2">
                     <ActionButton
                       action={setUserFlagAction}
@@ -63,7 +69,7 @@ export default async function AdminUsersPage() {
                     >
                       {user.verifiedSeller ? t("Remove verification") : t("Verify")}
                     </ActionButton>
-                    {user.id === admin.id ? null : (
+                    {user.id === viewer.userId ? null : (
                       <ActionButton
                         action={setUserFlagAction}
                         id={user.id}
@@ -75,6 +81,7 @@ export default async function AdminUsersPage() {
                       </ActionButton>
                     )}
                   </div>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

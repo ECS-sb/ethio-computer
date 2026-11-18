@@ -6,13 +6,13 @@ import { formatDate, formatPrice, getPlatform, handoverOptions } from "@/lib/cat
 import { feeFor } from "@/lib/fees";
 import { getT, pageTitle } from "@/lib/i18n-server";
 import { getAdminOrders } from "@/lib/queries";
-import { requireAdmin } from "@/lib/session";
+import { requireStaff } from "@/lib/telegram/access";
 
 export const generateMetadata = pageTitle("Orders");
 
 export default async function AdminOrdersPage() {
   const t = await getT();
-  await requireAdmin();
+  const { can } = await requireStaff("/admin/orders", "orders", "ordersDecide");
   const orders = await getAdminOrders();
 
   return (
@@ -50,17 +50,17 @@ export default async function AdminOrdersPage() {
               </div>
               <OrderProgress status={order.status} />
               <div className="flex flex-wrap gap-2">
-                {order.status === "PAID" && order.handover === "AGENT" ? (
+                {can.orders && order.status === "PAID" && order.handover === "AGENT" ? (
                   <ActionButton action={agentHandedOverAction} id={order.id}>
                     {t("Agent handed the account to the buyer")}
                   </ActionButton>
                 ) : null}
-                {order.status === "CONFIRMED" || order.status === "DISPUTED" ? (
+                {can.ordersDecide && (order.status === "CONFIRMED" || order.status === "DISPUTED") ? (
                   <ActionButton action={releaseOrderAction} id={order.id}>
                     {t("Complete for seller")}
                   </ActionButton>
                 ) : null}
-                {["AWAITING_PAYMENT", "PAID", "TRANSFERRED", "DISPUTED"].includes(order.status) ? (
+                {can.ordersDecide && ["AWAITING_PAYMENT", "PAID", "TRANSFERRED", "DISPUTED"].includes(order.status) ? (
                   <ActionButton action={cancelOrderAction} id={order.id} variant="outline">
                     {t("Cancel order")}
                   </ActionButton>

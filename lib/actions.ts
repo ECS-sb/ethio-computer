@@ -11,7 +11,7 @@ import { optimizeScreenshot } from "@/lib/images";
 import { reviewListing, reviewListingInBackground } from "@/lib/listing-review";
 import * as market from "@/lib/marketplace";
 import type { MessageKey } from "@/lib/messages";
-import { requestLocale, requireAdmin, requireUser } from "@/lib/session";
+import { isAdminEmail, requestLocale, requireAdmin, requireUser } from "@/lib/session";
 import { aiEnabled } from "@/lib/telegram/ai";
 import { analyzeChat, analyzePending } from "@/lib/telegram/analyze";
 import * as channels from "@/lib/telegram/channel-store";
@@ -220,28 +220,41 @@ export async function updateProfileAction(data: FormData): Promise<ActionResult>
 
 // ---- አድሚን
 
-function adminAction(message: MessageKey, work: (actor: market.Actor, targetId: string) => Promise<unknown>) {
+const NO_PERMISSION: ActionResult = { ok: false, message: "You don't have permission to do this." };
+
+/**
+ * የአድሚን ተግባር የሚፈጽመው ሰው፦ አድሚኑ ወይም ፈቃዱ የበራለት ንቁ ሰራተኛ። ፈቃድ ከሌለው null።
+ * ሰራተኛው ሲፈቀድለት marketplace.ts እንደ አድሚን ይቀበለዋል፤ መዝገቡ ግን በራሱ መለያ (id) ይያዛል።
+ */
+async function staffActor(permission: Permission): Promise<(market.Actor & { isFullAdmin: boolean }) | null> {
+  const viewer = await getTelegramViewer();
+  if (!viewer?.can[permission]) return null;
+  return { id: viewer.userId, isAdmin: true, isFullAdmin: viewer.isAdmin };
+}
+
+function adminAction(message: MessageKey, permission: Permission, work: (actor: market.Actor, targetId: string) => Promise<unknown>) {
   return async (data: FormData): Promise<ActionResult> => {
-    const admin = await requireAdmin();
+    const actor = await staffActor(permission);
+    if (!actor) return NO_PERMISSION;
     const parsed = id.safeParse(field(data, "id"));
     if (!parsed.success) return INVALID;
     return run(message, async () => {
-      await work(admin, parsed.data);
+      await work(actor, parsed.data);
     });
   };
 }
 
-const approveListingImpl = adminAction("Listing approved.", (actor, target) => market.reviewListing(actor, target, true));
-const agentHandedOverImpl = adminAction("Transfer recorded.", market.agentHandedOver);
-const releaseOrderImpl = adminAction("Order completed.", market.releaseOrder);
-const cancelOrderImpl = adminAction("Order cancelled.", market.cancelOrder);
-const resolveReportImpl = adminAction("Resolved.", market.resolveReport);
-const resolveContactImpl = adminAction("Resolved.", market.resolveContactMessage);
+const approveListingImpl = adminAction("Listing approved.", "listings", (actor, target) => market.reviewListing(actor, target, true));
+const agentHandedOverImpl = adminAction("Transfer recorded.", "orders", market.agentHandedOver);
+const releaseOrderImpl = adminAction("Order completed.", "ordersDecide", market.releaseOrder);
+const cancelOrderImpl = adminAction("Order cancelled.", "ordersDecide", market.cancelOrder);
+const resolveReportImpl = adminAction("Resolved.", "reports", market.resolveReport);
+const resolveContactImpl = adminAction("Resolved.", "reports", market.resolveContactMessage);
 
 const AI_NOT_SET_UP: ActionResult = { ok: false, message: "AI analysis is not set up yet." };
 
 export async function reviewListingWithAiAction(data: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  if (!(await staffActor("listings"))) return NO_PERMISSION;
   if (!aiEnabled()) return AI_NOT_SET_UP;
   const parsed = id.safeParse(field(data, "id"));
   if (!parsed.success) return INVALID;
@@ -406,15 +419,25 @@ export async function suggestTelegramReplyAction(chatId: string, force: boolean)
   }
 }
 
-// ---- የቴሌግራም ሰራተኞችና ፈቃዶቻቸው (አድሚን ብቻ)
+// ---- ሰራተኞችና ፈቃዶቻቸው (አድሚን ብቻ)
+
+const staffPassword = z.string().min(8).max(128);
 
 export async function addTelegramStaffAction(data: FormData): Promise<ActionResult> {
   await requireAdmin();
   const parsed = z
-    .object({ email: z.string().trim().toLowerCase().email().max(200), name: z.string().trim().min(1).max(80) })
+    .object({ email: z.string().trim().toLowerCase().email().max(200), name: z.string().trim().min(1).max(80), password: staffPassword })
     .safeParse(Object.fromEntries(data));
-  if (!parsed.success) return INVALID;
-  return run("Staff member added.", () => staff.addStaff(parsed.data.email, parsed.data.name));
+  if (!parsed.success) return { ok: false, message: "Check the email, and use a password of at least 8 characters." };
+  if (isAdminEmail(parsed.data.email)) return { ok: false, message: "This email is already an admin." };
+  return run("Staff member added.", () => staff.addStaff(parsed.data.email, parsed.data.name, parsed.data.password));
+}
+
+export async function resetStaffPasswordAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = z.object({ id, password: staffPassword }).safeParse(Object.fromEntries(data));
+  if (!parsed.success) return { ok: false, message: "Use a password of at least 8 characters." };
+  return run("Password changed. Give the new password to the staff member.", () => staff.resetStaffPassword(parsed.data.id, parsed.data.password));
 }
 
 const onOff = z.enum(["true", "false"]).transform((value) => value === "true");
@@ -442,7 +465,8 @@ export async function removeTelegramStaffAction(data: FormData): Promise<ActionR
 }
 
 export async function rejectListingAction(data: FormData): Promise<ActionResult> {
-  const admin = await requireAdmin();
+  const admin = await staffActor("listings");
+  if (!admin) return NO_PERMISSION;
   const parsed = z
     .object({ id, reason: z.string().trim().max(300).default("") })
     .safeParse({ id: field(data, "id"), reason: field(data, "reason") });
@@ -451,11 +475,19 @@ export async function rejectListingAction(data: FormData): Promise<ActionResult>
 }
 
 export async function setUserFlagAction(data: FormData): Promise<ActionResult> {
-  const admin = await requireAdmin();
+  const admin = await staffActor("users");
+  if (!admin) return NO_PERMISSION;
   const parsed = z
     .object({ id, flag: z.enum(["suspended", "verifiedSeller"]), value: z.enum(["true", "false"]) })
     .safeParse({ id: field(data, "id"), flag: field(data, "flag"), value: field(data, "value") });
   if (!parsed.success) return INVALID;
+  // ሰራተኛ ራሱን፣ አድሚኑን ወይም ሌላ ሰራተኛን መቀየር አይችልም፤ ይህን የሚያደርገው አድሚኑ ብቻ ነው።
+  if (!admin.isFullAdmin) {
+    const target = await db.user.findUnique({ where: { id: parsed.data.id }, select: { email: true } });
+    if (!target) return INVALID;
+    const isStaff = (await db.telegramStaff.count({ where: { email: target.email.toLowerCase() } })) > 0;
+    if (parsed.data.id === admin.id || isAdminEmail(target.email) || isStaff) return NO_PERMISSION;
+  }
   return run("Updated.", () =>
     market.setUserFlags(admin, parsed.data.id, { [parsed.data.flag]: parsed.data.value === "true" })
   );
@@ -490,7 +522,8 @@ export async function createDepositAction(data: FormData): Promise<ActionResult>
 }
 
 export async function reviewDepositAction(data: FormData): Promise<ActionResult> {
-  const admin = await requireAdmin();
+  const admin = await staffActor("deposits");
+  if (!admin) return NO_PERMISSION;
   const parsed = reviewInput(data);
   if (!parsed.success) return INVALID;
   const approve = parsed.data.decision === "approve";
@@ -505,7 +538,8 @@ export async function requestWithdrawalAction(data: FormData): Promise<ActionRes
 }
 
 export async function reviewWithdrawalAction(data: FormData): Promise<ActionResult> {
-  const admin = await requireAdmin();
+  const admin = await staffActor("withdrawals");
+  if (!admin) return NO_PERMISSION;
   const parsed = reviewInput(data);
   if (!parsed.success) return INVALID;
   const paid = parsed.data.decision === "approve";
@@ -544,7 +578,8 @@ export async function submitVerificationAction(data: FormData): Promise<ActionRe
 }
 
 export async function reviewVerificationAction(data: FormData): Promise<ActionResult> {
-  const admin = await requireAdmin();
+  const admin = await staffActor("verifications");
+  if (!admin) return NO_PERMISSION;
   const parsed = reviewInput(data);
   if (!parsed.success) return INVALID;
   const approve = parsed.data.decision === "approve";

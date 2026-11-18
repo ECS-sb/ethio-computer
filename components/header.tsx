@@ -20,9 +20,9 @@ async function HeaderAuth() {
       </LocaleLink>
     );
   }
-  // ቻት የሚመልሱ ሰራተኞች በምናሌው በኩል ወደ ቴሌግራም ቻቶቹ ይሄዳሉ።
-  const teamInbox = !user.isAdmin && Boolean((await getTelegramViewer())?.can.chats);
-  return <UserMenu name={user.name} image={user.image} isAdmin={user.isAdmin} teamInbox={teamInbox} />;
+  // ሰራተኞች በምናሌው በኩል ወደ ስራ ገጻቸው ይሄዳሉ (/admin ወደ መጀመሪያው የተፈቀደ ገጽ ይወስዳቸዋል)።
+  const isStaff = !user.isAdmin && Boolean(await getTelegramViewer());
+  return <UserMenu name={user.name} image={user.image} isAdmin={user.isAdmin} isStaff={isStaff} />;
 }
 
 export function Header() {

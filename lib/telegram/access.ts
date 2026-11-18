@@ -26,6 +26,17 @@ export const getTelegramViewer = cache(async (): Promise<TelegramViewer | null> 
   return { userId: user.id, name: staff.name, isAdmin: false, staffId: staff.id, can: resolvePermissions(staff.permissions) };
 });
 
+/**
+ * የማርኬቱ አድሚን ገጾች፦ አድሚኑ ወይም ከፈቃዶቹ አንዱ የበራለት ሰራተኛ ብቻ ይገባል፤ ሌላ ሰው 404 ያገኛል።
+ * ያልገባ ሰው ወደ መግቢያ ይላካል (እዚያ ለሰራተኞች የኢሜይል መግቢያ ሊንክ አለ)።
+ */
+export async function requireStaff(path: string, ...anyOf: Permission[]): Promise<TelegramViewer> {
+  await requireUser(path);
+  const viewer = await getTelegramViewer();
+  if (!viewer || !anyOf.some((permission) => viewer.can[permission])) notFound();
+  return viewer;
+}
+
 /** ገጹን ማየት የማይችል ሰው 404 ያገኛል (ገጹ መኖሩም እንዳይታወቅ)፤ ያልገባ ሰው ወደ መግቢያ ይላካል። */
 export async function requireTelegramViewer(permission: Permission = "chats"): Promise<TelegramViewer> {
   await requireUser("/admin/telegram");

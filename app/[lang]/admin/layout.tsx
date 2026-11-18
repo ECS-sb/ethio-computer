@@ -9,23 +9,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getT } from "@/lib/i18n-server";
 import { requireAdmin } from "@/lib/session";
 import { getTelegramViewer } from "@/lib/telegram/access";
+import { staffPages } from "@/lib/telegram/permissions";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
   return { title: { default: t("Admin"), template: `%s | ${t("Admin")}` }, robots: { index: false } };
 }
 
-/** አድሚኑ ሁሉንም ያያል፤ ቻት የሚመልሱ ሰራተኞች የተፈቀደላቸውን የቴሌግራም ገጾች ብቻ። ሌላ ሰው 404 (ገጾቹ ራሳቸውም ይፈትሻሉ)። */
+/** አድሚኑ ሁሉንም ያያል፤ ሰራተኞች አድሚኑ የፈቀደላቸውን ገጾች ብቻ። ሌላ ሰው 404 (ገጾቹ ራሳቸውም ይፈትሻሉ)። */
 async function AdminNav() {
   const viewer = await getTelegramViewer();
   if (!viewer) await requireAdmin();
   if (!viewer || viewer.isAdmin) return <DashboardNav area="admin" />;
-  const only = [
-    ...(viewer.can.chats ? ["/admin/telegram"] : []),
-    ...(viewer.can.chats && viewer.can.sales ? ["/admin/telegram/sales"] : []),
-    ...(viewer.can.chats && viewer.can.profit ? ["/admin/telegram/channels"] : []),
-  ];
-  return <DashboardNav area="admin" only={only} />;
+  return <DashboardNav area="admin" only={staffPages(viewer.can)} />;
 }
 
 /** ምናሌው ጠብቦ እንደተተወ cookie-ው ይነግረናል፤ ገጹ ሲከፈት ሳይዘል በዚያው መጠን ይታያል። */
