@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   ArrowRightIcon,
   BriefcaseIcon,
-  CircleHelpIcon,
+  SparklesIcon,
   LayoutDashboardIcon,
   MenuIcon,
   SearchIcon,
@@ -36,7 +36,7 @@ const links: NavLink[] = [
   { href: "/sell", label: "Sell", icon: TagIcon },
   { href: "/talent", label: "Hire talent", icon: BriefcaseIcon },
   { href: "/sellers", label: "Sellers", icon: UsersIcon },
-  { href: "/faq", label: "FAQ", icon: CircleHelpIcon },
+  { href: "/services", label: "Services", icon: SparklesIcon },
 ];
 
 const mobileExtras: NavLink[] = [

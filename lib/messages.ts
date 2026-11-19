@@ -82,6 +82,36 @@ export const am = {
   "The seller transfers the account, the buyer confirms, and the order is completed for the seller.":
     "ሻጩ አካውንቱን ያስተላልፋል፣ ገዢው ያረጋግጣል፣ ከዚያም ትዕዛዙ ለሻጩ ይጠናቀቃል።",
 
+  // ---- Services
+  Services: "አገልግሎቶች",
+  "What we": "የምንሰጣቸው",
+  "can do for you": "አገልግሎቶች",
+  "Besides buying and selling accounts, we help you grow, fix and get paid from your channels. Message us on Telegram to order.":
+    "ከአካውንት ግዢና ሽያጭ በተጨማሪ ቻናሎችዎን እንዲያሳድጉ፣ ችግራቸውን እንዲፈቱ እና ገቢ እንዲያገኙ እንረዳዎታለን። ለማዘዝ በቴሌግራም ያናግሩን።",
+  "Order on Telegram": "በቴሌግራም ይዘዙ",
+  "Call {phone}": "ይደውሉ፦ {phone}",
+  "Boost your account": "አካውንትዎን ቡስት ያድርጉ",
+  "More followers, subscribers, views and likes for TikTok, YouTube, Instagram, Telegram and Facebook.":
+    "ለTikTok፣ YouTube፣ Instagram፣ Telegram እና Facebook ተጨማሪ ፎሎወር፣ ሰብስክራይበር፣ ቪው እና ላይክ።",
+  "YouTube channel history": "የዩቲዩብ ቻናል ሂስትሪ (Build channel history)",
+  "We build a real history for your YouTube channel so it looks established and is ready to grow and earn.":
+    "የዩቲዩብ ቻናልዎ የቆየ እና የታመነ እንዲመስል፣ ለማደግና ገቢ ለማግኘትም ዝግጁ እንዲሆን ሂስትሪውን እንገነባለን።",
+  "AdSense and 2-Step Verification problems": "የAdSense እና የ2-Step Verification ችግሮች",
+  "AdSense that won't link, a stuck PIN or payment, or 2-Step Verification locking you out of your channel. We fix it.":
+    "AdSense አልገናኝ ካለ፣ PIN ወይም ክፍያ ከቆመ፣ ወይም 2-Step Verification ከቻናልዎ ካስወጣዎት እኛ እናስተካክላለን።",
+  "We open a channel for you": "ቻናል እንከፍትልዎታለን",
+  "A new YouTube, TikTok, Telegram or Facebook channel, set up properly with a name, logo and the right settings.":
+    "አዲስ የYouTube፣ TikTok፣ Telegram ወይም Facebook ቻናል በስም፣ በሎጎ እና በትክክለኛ ሴቲንግ ተዘጋጅቶ።",
+  "Monetization setup": "ሞኒታይዜሽን ማስጀመር",
+  "Help applying for the YouTube Partner Program and TikTok's creator rewards, and meeting their requirements.":
+    "ለYouTube Partner Program እና ለTikTok የክሪኤተር ክፍያ ማመልከትና መስፈርቶቻቸውን ማሟላት።",
+  "Withdraw your earnings": "ገቢዎን ማውጣት",
+  "Get your TikTok, YouTube or PayPal earnings out and into birr.": "የTikTok፣ YouTube ወይም PayPal ገቢዎን አውጥተው ወደ ብር ይቀይሩ።",
+  "Account recovery and security": "አካውንት ማስመለስ እና ደህንነት",
+  "Get back a hacked or locked account and protect it so it doesn't happen again.": "የተጠለፈ ወይም የተቆለፈ አካውንትዎን አስመልሰን ዳግም እንዳይደርስበት እንጠብቀዋለን።",
+  "Something else?": "ሌላ አገልግሎት ይፈልጋሉ?",
+  "Tell us what you need on Telegram. If we can do it, we'll give you a price.": "የሚፈልጉትን በቴሌግራም ይንገሩን። መስራት የምንችለው ከሆነ ዋጋ እንነግርዎታለን።",
+
   // ---- FAQ
   "How is the seller's ownership verified?": "ሻጩ የአካውንቱ ባለቤት መሆኑ እንዴት ይረጋገጣል?",
   "Each new listing gets a verification code. The seller puts it in the account's bio, and an admin checks the code before approving the listing.":

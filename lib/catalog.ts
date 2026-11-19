@@ -138,6 +138,53 @@ export const howItWorksSteps: { title: MessageKey; description: MessageKey }[] =
   { title: "Handover and completion", description: "The seller transfers the account, the buyer confirms, and the order is completed for the seller." },
 ];
 
+/** ከአካውንት ሽያጭ ውጪ ድርጅቱ የሚሰጣቸው አገልግሎቶች (/services)። ደንበኛው በቴሌግራም ያዛል። */
+export const SERVICE_IDS = ["boost", "history", "adsense", "newChannel", "monetization", "withdrawal", "recovery", "other"] as const;
+export type ServiceId = (typeof SERVICE_IDS)[number];
+
+export const services: { id: ServiceId; title: MessageKey; description: MessageKey }[] = [
+  {
+    id: "boost",
+    title: "Boost your account",
+    description: "More followers, subscribers, views and likes for TikTok, YouTube, Instagram, Telegram and Facebook.",
+  },
+  {
+    id: "history",
+    title: "YouTube channel history",
+    description: "We build a real history for your YouTube channel so it looks established and is ready to grow and earn.",
+  },
+  {
+    id: "adsense",
+    title: "AdSense and 2-Step Verification problems",
+    description: "AdSense that won't link, a stuck PIN or payment, or 2-Step Verification locking you out of your channel. We fix it.",
+  },
+  {
+    id: "newChannel",
+    title: "We open a channel for you",
+    description: "A new YouTube, TikTok, Telegram or Facebook channel, set up properly with a name, logo and the right settings.",
+  },
+  {
+    id: "monetization",
+    title: "Monetization setup",
+    description: "Help applying for the YouTube Partner Program and TikTok's creator rewards, and meeting their requirements.",
+  },
+  {
+    id: "withdrawal",
+    title: "Withdraw your earnings",
+    description: "Get your TikTok, YouTube or PayPal earnings out and into birr.",
+  },
+  {
+    id: "recovery",
+    title: "Account recovery and security",
+    description: "Get back a hacked or locked account and protect it so it doesn't happen again.",
+  },
+  {
+    id: "other",
+    title: "Something else?",
+    description: "Tell us what you need on Telegram. If we can do it, we'll give you a price.",
+  },
+];
+
 export const faqs: { question: MessageKey; answer: MessageKey }[] = [
   {
     question: "How is the seller's ownership verified?",

@@ -1,6 +1,6 @@
 import "server-only";
 import type Anthropic from "@anthropic-ai/sdk";
-import { contact } from "@/lib/catalog";
+import { contact, services } from "@/lib/catalog";
 import { FEE_PERCENT } from "@/lib/fees";
 import { AI_MODEL, anthropic } from "@/lib/telegram/ai";
 import { MIN_DEPOSIT_ETB, MIN_WITHDRAWAL_ETB } from "@/lib/wallet";
@@ -55,6 +55,9 @@ Seller verification (/dashboard/verification)
 Chat rules
 - Keep the whole deal on the site. Messages with phone numbers, usernames, links, emails or other apps (Telegram, WhatsApp…) are not delivered. Each attempt is a warning; the third suspends the account automatically.
 - Never send passwords through messages.
+
+Other services (/services), ordered on Telegram ${contact.telegramUser}; prices are given there
+${services.map((service) => `- ${service.title}: ${service.description}`).join("\n")}
 
 Contacts for a person
 - Phone ${contact.phone}, Telegram ${contact.telegramUser}, Telegram channel ${contact.telegramChannel}, or the Contact page (/contact).`;

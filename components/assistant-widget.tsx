@@ -16,7 +16,7 @@ const ERROR_MARK = "\u0000";
 const suggestions: MessageKey[] = ["How do I buy an account?", "How do I sell my account?", "What are the fees?", "How do I add money to my wallet?", "How do I get verified?"];
 
 // መልሱ ውስጥ ያሉ የሳይቱ አድራሻዎች (ለምሳሌ /sell) ተጫኝ ሊንክ ይሆናሉ።
-const PATH_PATTERN = /(\/(?:accounts|sell|login|contact|faq|how-it-works|dashboard(?:\/[a-z-]+)*)\b)/g;
+const PATH_PATTERN = /(\/(?:accounts|sell|login|contact|faq|services|how-it-works|dashboard(?:\/[a-z-]+)*)\b)/g;
 
 function Linkified({ text, onNavigate }: { text: string; onNavigate: () => void }) {
   return text.split(PATH_PATTERN).map((part, index) =>
