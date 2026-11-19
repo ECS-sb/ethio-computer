@@ -101,7 +101,7 @@ async function ListingContent({ params }: Props) {
           {listing.images.length > 0 ? (
             <section className="flex flex-col gap-4">
               <h2 className="text-xl font-semibold">{t("Channel screenshots")}</h2>
-              <ScreenshotGallery images={listing.images} />
+              <ScreenshotGallery images={listing.images} platform={listing.platform} />
               <p className="text-xs text-muted-foreground">{t("Screenshots come from the seller. Check the numbers again during the handover.")}</p>
             </section>
           ) : null}

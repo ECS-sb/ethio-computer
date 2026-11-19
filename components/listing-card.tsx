@@ -2,6 +2,7 @@ import Image from "next/image";
 import { BadgeCheckIcon } from "lucide-react";
 import { PlatformMark } from "@/components/brand";
 import { LocaleLink } from "@/components/i18n-provider";
+import { ScreenshotFrame } from "@/components/screenshot-frame";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,15 +20,17 @@ export async function ListingCard({ listing }: { listing: PublicListing }) {
     <Card className="bg-card/70 backdrop-blur-sm transition-all hover:-translate-y-1 hover:ring-primary/60 [--card-spacing:--spacing(6)]">
       {cover ? (
         <div className="px-6">
-          <Image
-            unoptimized
-            src={`/api/listing-images/${cover.id}?size=thumb`}
-            alt={t("Channel screenshots")}
-            width={cover.width}
-            height={cover.height}
-            loading="lazy"
-            className={`aspect-video w-full rounded-xl bg-secondary object-cover object-top ${sold ? "opacity-60 grayscale" : ""}`}
-          />
+          <ScreenshotFrame platform={listing.platform} className={sold ? "opacity-60 grayscale" : undefined}>
+            <Image
+              unoptimized
+              src={`/api/listing-images/${cover.id}?size=thumb`}
+              alt={t("Channel screenshots")}
+              width={cover.width}
+              height={cover.height}
+              loading="lazy"
+              className="aspect-video w-full object-cover object-top"
+            />
+          </ScreenshotFrame>
         </div>
       ) : null}
       <CardHeader className="grid-cols-[auto_1fr] items-center gap-x-4">
