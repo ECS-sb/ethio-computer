@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import {
   BadgeCheckIcon,
   BadgeDollarSignIcon,
+  BriefcaseIcon,
   ChartNoAxesCombinedIcon,
   FlagIcon,
   HandCoinsIcon,
@@ -16,6 +17,7 @@ import {
   SendIcon,
   SettingsIcon,
   ShoppingBagIcon,
+  SparklesIcon,
   StoreIcon,
   UserCogIcon,
   UsersIcon,
@@ -49,6 +51,13 @@ const groups: Record<"user" | "admin", Group[]> = {
       ],
     },
     {
+      title: "Talent",
+      items: [
+        { href: "/dashboard/jobs", label: "Jobs", icon: BriefcaseIcon },
+        { href: "/dashboard/talent", label: "My services", icon: SparklesIcon },
+      ],
+    },
+    {
       title: "Account",
       items: [
         { href: "/dashboard/wallet", label: "Wallet", icon: WalletIcon },
@@ -69,6 +78,7 @@ const groups: Record<"user" | "admin", Group[]> = {
         { href: "/admin/verifications", label: "Seller verification", icon: BadgeCheckIcon },
         { href: "/admin/users", label: "Users", icon: UsersIcon },
         { href: "/admin/reports", label: "Reports", icon: FlagIcon },
+        { href: "/admin/talent", label: "Talent", icon: BriefcaseIcon },
         { href: "/admin/telegram", label: "Telegram", icon: SendIcon },
         { href: "/admin/telegram/sales", label: "Telegram sales", icon: BadgeDollarSignIcon },
         { href: "/admin/telegram/channels", label: "Channels & profit", icon: ChartNoAxesCombinedIcon },
@@ -95,7 +105,7 @@ export function DashboardNav({ area, only }: { area: keyof typeof groups; only?:
         <div key={group.title} className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-stretch">
           {only ? null : <p className={cn("hidden px-4 pt-2 text-xs font-semibold text-muted-foreground", compact ? "lg:sr-only" : "lg:block")}>{t(group.title)}</p>}
           {group.items.map((item) => {
-            const hasSubpages = item.href === "/dashboard/messages" || item.href === "/admin/telegram" || item.href === "/admin/telegram/channels";
+            const hasSubpages = ["/dashboard/messages", "/dashboard/jobs", "/dashboard/talent", "/admin/telegram", "/admin/telegram/channels", "/admin/talent"].includes(item.href);
             // ንዑስ ገጹ የራሱ ሊንክ ካለው (ለምሳሌ /admin/telegram/sales) የወላጁ ሊንክ አይበራም።
             const ownedByChild = group.items.some(
               (other) => other.href.startsWith(`${item.href}/`) && (pathname === other.href || pathname.startsWith(`${other.href}/`))

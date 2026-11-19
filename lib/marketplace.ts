@@ -338,9 +338,16 @@ const strikeMessages: Record<number, MessageKey> = {
   2: "Not delivered. Phone numbers, usernames, links and other apps aren't allowed here. Warning 2 of 3: next time, your account is suspended.",
 };
 
-async function guardText(actor: Actor, text: string, allowedHandles: string[], conversationId: string | null) {
+/** ቻትና የባለሙያዎቹ ቻትም (lib/talent.ts) ይጠቀሙበታል፤ conversationId የቻቱ መለያ ነው (ለአድሚኑ ሪፖርት)። */
+export async function guardText(
+  actor: Actor,
+  text: string,
+  allowedHandles: string[],
+  conversationId: string | null,
+  options: { allowedLinkHosts?: readonly string[] } = {}
+) {
   if (!text.trim()) return;
-  const reason = findBlockedContent(text, allowedHandles);
+  const reason = findBlockedContent(text, allowedHandles, options);
   if (!reason) return;
   const strikes = await db.$transaction(async (tx) => {
     await tx.chatViolation.create({ data: { userId: actor.id, conversationId, body: text.slice(0, 2000), reason } });

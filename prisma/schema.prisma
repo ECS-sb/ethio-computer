@@ -46,6 +46,9 @@ enum WalletEntryType {
   SALE
   WITHDRAWAL
   WITHDRAWAL_RETURNED
+  JOB_PAYMENT
+  JOB_REFUND
+  JOB_EARNING
 }
 
 enum OfferStatus {
@@ -95,6 +98,11 @@ model User {
   deposits           Deposit[]
   withdrawals        Withdrawal[]
   chatViolations     ChatViolation[]
+  gigs               Gig[]
+  gigThreads         GigThread[]         @relation("GigThreadClient")
+  gigMessages        GigMessage[]
+  jobsHired          Job[]               @relation("JobClient")
+  jobsWorked         Job[]               @relation("JobFreelancer")
 
   @@map("user")
 }
@@ -378,6 +386,8 @@ model WalletEntry {
   deposit      Deposit?        @relation(fields: [depositId], references: [id], onDelete: Restrict)
   withdrawalId String?
   withdrawal   Withdrawal?     @relation(fields: [withdrawalId], references: [id], onDelete: Restrict)
+  jobId        String?
+  job          Job?            @relation(fields: [jobId], references: [id], onDelete: Restrict)
   createdAt    DateTime        @default(now())
 
   @@index([userId, createdAt])
@@ -743,3 +753,172 @@ model WhatsAppMessage {
   @@map("whatsapp_message")
 }
 
+// ---- ባለሙያ ቅጠሩ (Hire talent)፦ ቮይስ ኦቨር፣ ታምብኔል፣ ኤዲቲንግ፣ AI ቪዲዮ
+// ደንበኛው ሲቀጥር ብሩ ከዋሌቱ ተይዞ (escrow) ይቆያል፤ ስራውን ሲያጸድቅ ለባለሙያው ይገባል።
+
+enum GigCategory {
+  VOICE_OVER
+  THUMBNAIL
+  VIDEO_EDITING
+  AI_VIDEO
+}
+
+/// PAUSED፦ ባለሙያው ለጊዜው አዲስ ስራ አይቀበልም።
+enum GigStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAUSED
+}
+
+/// REQUESTED፦ ተከፍሎ ባለሙያው እንዲቀበል ይጠብቃል። DECLINED/REFUNDED፦ ብሩ ለደንበኛው ተመልሷል።
+enum JobStatus {
+  REQUESTED
+  IN_PROGRESS
+  DELIVERED
+  COMPLETED
+  DISPUTED
+  DECLINED
+  REFUNDED
+}
+
+/// ባለሙያው የሚያቀርበው አገልግሎት (ፖርትፎሊዮ ያለው)፤ አድሚኑ ካጸደቀው በኋላ በገጹ ላይ ይታያል።
+model Gig {
+  id             String      @id @default(cuid())
+  freelancerId   String
+  freelancer     User        @relation(fields: [freelancerId], references: [id], onDelete: Restrict)
+  category       GigCategory
+  title          String
+  description    String
+  /// መነሻ ዋጋ፤ ደንበኛው ከዚህ በታች መቅጠር አይችልም
+  priceEtb       Int
+  deliveryDays   Int
+  /// YouTube ወይም Google Drive ሊንኮች (ለቪዲዮ ናሙናዎች)፤ አድሚኑ ይገመግማቸዋል
+  portfolioLinks String[]    @default([])
+  status         GigStatus   @default(PENDING)
+  rejectReason   String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  samples GigSample[]
+  threads GigThread[]
+  jobs    Job[]
+
+  @@index([status, category])
+  @@index([freelancerId])
+  @@map("gig")
+}
+
+/// የፖርትፎሊዮ ናሙና፦ ምስል (WebP፣ ከthumb ጋር) ወይም ድምፅ (ለቮይስ ኦቨር)።
+model GigSample {
+  id        String   @id @default(cuid())
+  gigId     String
+  gig       Gig      @relation(fields: [gigId], references: [id], onDelete: Cascade)
+  position  Int
+  kind      String
+  mimeType  String
+  width     Int?
+  height    Int?
+  data      Bytes
+  thumb     Bytes?
+  createdAt DateTime @default(now())
+
+  @@unique([gigId, position])
+  @@map("gig_sample")
+}
+
+/// በአንድ አገልግሎት ላይ ደንበኛውና ባለሙያው የሚነጋገሩበት ቻት (ከመቅጠር በፊትም በኋላም)።
+model GigThread {
+  id        String   @id @default(cuid())
+  gigId     String
+  gig       Gig      @relation(fields: [gigId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    User     @relation("GigThreadClient", fields: [clientId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages GigMessage[]
+  jobs     Job[]
+
+  @@unique([gigId, clientId])
+  @@index([clientId])
+  @@map("gig_thread")
+}
+
+/// system፦ በሲስተሙ የተጻፈ (ለምሳሌ "ስራው ደርሷል")፤ ላኪው ድርጊቱን የፈጸመው ሰው ነው።
+model GigMessage {
+  id        String    @id @default(cuid())
+  threadId  String
+  thread    GigThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User      @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  body      String
+  system    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  @@index([threadId, createdAt])
+  @@map("gig_message")
+}
+
+model Job {
+  id            String     @id @default(cuid())
+  gigId         String
+  gig           Gig        @relation(fields: [gigId], references: [id], onDelete: Restrict)
+  threadId      String
+  thread        GigThread  @relation(fields: [threadId], references: [id], onDelete: Restrict)
+  clientId      String
+  client        User       @relation("JobClient", fields: [clientId], references: [id], onDelete: Restrict)
+  freelancerId  String
+  freelancer    User       @relation("JobFreelancer", fields: [freelancerId], references: [id], onDelete: Restrict)
+  amountEtb     Int
+  brief         String
+  status        JobStatus  @default(REQUESTED)
+  feePercent    Int
+  feeEtb        Int?
+  payoutEtb     Int?
+  dueAt         DateTime?
+  deliveryNote  String?
+  deliveredAt   DateTime?
+  revisionCount Int        @default(0)
+  completedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  files         JobFile[]
+  review        JobReview?
+  walletEntries WalletEntry[]
+
+  @@index([clientId])
+  @@index([freelancerId])
+  @@index([status])
+  @@index([threadId])
+  @@map("job")
+}
+
+/// ባለሙያው ያስረከበው ፋይል (ደንበኛው፣ ባለሙያው እና አድሚኑ ብቻ ያዩታል)።
+model JobFile {
+  id        String   @id @default(cuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name      String
+  mimeType  String
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@index([jobId])
+  @@map("job_file")
+}
+
+/// ደንበኛው ስራው ከተጠናቀቀ በኋላ የሚሰጠው ደረጃ (1-5) እና አስተያየት፤ በአገልግሎቱ ገጽ ላይ ይታያል።
+model JobReview {
+  id        String   @id @default(cuid())
+  jobId     String   @unique
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  gigId     String
+  rating    Int
+  comment   String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([gigId])
+  @@map("job_review")
+}

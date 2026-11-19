@@ -75,6 +75,23 @@ const OFF_SITE_PAYMENT_PATTERNS = [
   /ቴሌብር|ሲቢኢ\s*ብር|ኤምፔሳ|ከሳይቱ\s*ውጪ|ከዌብሳይቱ\s*ውጪ|በቀጥታ\s*(?:ክፈል|ክፈይ|ክፈሉ|ላክ|ላኪ|ላኩ)|ቀጥታ\s*(?:ክፈል|ክፈይ|ላክ|ላኪ)|(?:ሂሳብ|አካውንት)\s*ቁጥር/u,
 ];
 
+/** ስራ ማስረከቢያ ሊንኮች (ለምሳሌ Google Drive) ይፈቀዳሉ፦ ከተፈቀዱት አድራሻዎች አንዱ የሆነ https ሊንክ ከጽሑፉ ይወጣል፤ ሌላው ሁሉ እንደተለመደው ይፈተሻል። */
+export function stripAllowedLinks(text: string, hosts: readonly string[]): string {
+  if (hosts.length === 0) return text;
+  return text.replace(/https:\/\/[^\s<>"']+/giu, (url) => (isAllowedLink(url, hosts) ? " " : url));
+}
+
+export function isAllowedLink(url: string, hosts: readonly string[]): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password) return false;
+    const host = parsed.hostname.toLowerCase();
+    return hosts.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
+  } catch {
+    return false;
+  }
+}
+
 function spellOutNumbers(text: string): string {
   return text.replace(NUMBER_WORD_PATTERN, (word) => NUMBER_WORDS[word.toLowerCase()] ?? word);
 }
@@ -83,8 +100,8 @@ function spellOutNumbers(text: string): string {
  * መልዕክቱ መታገድ ካለበት ምክንያቱን ይመልሳል፣ ካልሆነ null።
  * allowedHandles፦ የሚሸጠው አካውንት ራሱ ስም (በማስታወቂያው ላይ በግልጽ ስለሚታይ አይያዝም)።
  */
-export function findBlockedContent(body: string, allowedHandles: string[] = []): ChatBlockReason | null {
-  const text = body.normalize("NFKC");
+export function findBlockedContent(body: string, allowedHandles: string[] = [], options: { allowedLinkHosts?: readonly string[] } = {}): ChatBlockReason | null {
+  const text = stripAllowedLinks(body.normalize("NFKC"), options.allowedLinkHosts ?? []);
   if (EMAIL_PATTERNS.some((pattern) => pattern.test(text))) return "EMAIL";
   if (LINK_PATTERNS.some((pattern) => pattern.test(text))) return "LINK";
 

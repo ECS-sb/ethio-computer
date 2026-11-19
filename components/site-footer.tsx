@@ -14,6 +14,7 @@ export async function SiteFooter() {
         ...platforms.map((platform) => ({ href: `/accounts?platform=${platform.id}`, label: platform.name })),
         { href: "/accounts?special=1", label: t("Special usernames") },
         { href: "/sold", label: t("Sold") },
+        { href: "/talent", label: t("Hire talent") },
       ],
     },
     {

@@ -1,5 +1,6 @@
 import { FEE_PERCENT } from "@/lib/fees";
 import type { MessageKey } from "@/lib/messages";
+import type { WalletEntryType } from "@/lib/generated/prisma/enums";
 
 export type PlatformId = "instagram" | "tiktok" | "youtube" | "telegram" | "facebook" | "x";
 export type ListingStatusValue = "PENDING" | "APPROVED" | "REJECTED" | "IN_PROGRESS" | "SOLD" | "ARCHIVED";
@@ -271,11 +272,14 @@ export const withdrawalStatusLabels: Record<"PENDING" | "PAID" | "REJECTED", Mes
   REJECTED: "Rejected",
 };
 
-export const walletEntryLabels: Record<"DEPOSIT" | "PURCHASE" | "REFUND" | "SALE" | "WITHDRAWAL" | "WITHDRAWAL_RETURNED", MessageKey> = {
+export const walletEntryLabels: Record<WalletEntryType, MessageKey> = {
   DEPOSIT: "Deposit",
   PURCHASE: "Purchase",
   REFUND: "Refund",
   SALE: "Sale (after fee)",
   WITHDRAWAL: "Withdrawal",
   WITHDRAWAL_RETURNED: "Withdrawal returned",
+  JOB_PAYMENT: "Paid for a job",
+  JOB_REFUND: "Job refund",
+  JOB_EARNING: "Job earning",
 };

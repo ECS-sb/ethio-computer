@@ -5,10 +5,10 @@ import Form from "next/form";
 import { usePathname } from "next/navigation";
 import {
   ArrowRightIcon,
+  BriefcaseIcon,
   CircleHelpIcon,
   LayoutDashboardIcon,
   MenuIcon,
-  RouteIcon,
   SearchIcon,
   StoreIcon,
   TagIcon,
@@ -34,7 +34,7 @@ type NavLink = { href: string; label: MessageKey; icon: LucideIcon };
 const links: NavLink[] = [
   { href: "/accounts", label: "Market", icon: StoreIcon },
   { href: "/sell", label: "Sell", icon: TagIcon },
-  { href: "/how-it-works", label: "How it works", icon: RouteIcon },
+  { href: "/talent", label: "Hire talent", icon: BriefcaseIcon },
   { href: "/sellers", label: "Sellers", icon: UsersIcon },
   { href: "/faq", label: "FAQ", icon: CircleHelpIcon },
 ];

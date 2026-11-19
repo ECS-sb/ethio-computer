@@ -50,6 +50,7 @@ export function staffPages(can: Permissions): string[] {
     ...(can.verifications ? ["/admin/verifications"] : []),
     ...(can.users ? ["/admin/users"] : []),
     ...(can.reports ? ["/admin/reports"] : []),
+    ...(can.listings || can.ordersDecide ? ["/admin/talent"] : []),
     ...(can.chats ? ["/admin/telegram"] : []),
     ...(can.chats && can.sales ? ["/admin/telegram/sales"] : []),
     ...(can.chats && can.profit ? ["/admin/telegram/channels"] : []),

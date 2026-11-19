@@ -8,8 +8,10 @@ import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from "
 
 type Screenshot = { id: string; width: number; height: number };
 
-export function ScreenshotGallery({ images }: { images: Screenshot[] }) {
+/** src፦ የምስሉ አድራሻ ቅርጽ ({id} ይተካል)፤ ነባሪው የማስታወቂያዎቹ ስክሪንሾቶች ናቸው። */
+export function ScreenshotGallery({ images, src = "/api/listing-images/{id}" }: { images: Screenshot[]; src?: string }) {
   const t = useT();
+  const url = (id: string) => src.replace("{id}", id);
   return (
     <div className="grid gap-6 sm:grid-cols-2">
       {images.map((image, index) => {
@@ -22,7 +24,7 @@ export function ScreenshotGallery({ images }: { images: Screenshot[] }) {
             >
               <Image
                 unoptimized
-                src={`/api/listing-images/${image.id}?size=thumb`}
+                src={`${url(image.id)}?size=thumb`}
                 alt={label}
                 width={image.width}
                 height={image.height}
@@ -36,7 +38,7 @@ export function ScreenshotGallery({ images }: { images: Screenshot[] }) {
                   <XIcon />
                 </DialogClose>
               </div>
-              <Image unoptimized src={`/api/listing-images/${image.id}`} alt={label} width={image.width} height={image.height} className="h-auto w-full rounded-xl" />
+              <Image unoptimized src={url(image.id)} alt={label} width={image.width} height={image.height} className="h-auto w-full rounded-xl" />
             </DialogContent>
           </Dialog>
         );
