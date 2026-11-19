@@ -3,6 +3,7 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCurrentUser, requireUser } from "@/lib/session";
+import { canSeeCategory } from "@/lib/telegram/accounts";
 import { ALL_PERMISSIONS, resolvePermissions, type Permission, type Permissions } from "@/lib/telegram/permissions";
 
 export type TelegramViewer = {
@@ -43,4 +44,21 @@ export async function requireTelegramViewer(permission: Permission = "chats"): P
   const viewer = await getTelegramViewer();
   if (!viewer || !viewer.can.chats || !viewer.can[permission]) notFound();
   return viewer;
+}
+
+/**
+ * ቻቱ ሰራተኛው ማየት በሚችለው ምድብ (የሽያጭ/የትምህርት ቤት) አካውንት ውስጥ ነው? አድሚን ሁሉንም ያያል።
+ * by፦ በቻቱ id፣ በመልዕክቱ id (ፋይል ሲጠየቅ) ወይም በማስጠንቀቂያው id።
+ */
+export async function canSeeChat(viewer: TelegramViewer, by: { chatId?: string; messageId?: string; alertId?: string }): Promise<boolean> {
+  if (viewer.isAdmin) return true;
+  const select = { connection: { select: { category: true } } } as const;
+  const chat = by.chatId
+    ? await db.telegramChat.findUnique({ where: { id: by.chatId }, select })
+    : by.messageId
+      ? (await db.telegramMessage.findUnique({ where: { id: by.messageId }, select: { chat: { select } } }))?.chat
+      : by.alertId
+        ? (await db.telegramAlert.findUnique({ where: { id: by.alertId }, select: { chat: { select } } }))?.chat
+        : null;
+  return Boolean(chat && canSeeCategory(viewer.can, chat.connection.category));
 }

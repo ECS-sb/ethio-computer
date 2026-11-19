@@ -4,6 +4,7 @@ import type { MessageKey } from "@/lib/messages";
 /**
  * ነባሪዎቹ (defaultOn) ሰራተኛው ስራውን እንዲሰራ የሚያስፈልገውን ያበራሉ፤ የድርጅቱን ትርፍ፣ የሽያጭ ገጹን እና
  * ሽሽጥን የሚያጋልጡ ማስጠንቀቂያዎችን (የተሰረዙ/የተቀየሩ መልዕክቶችን ጨምሮ) ይደብቃሉ።
+ * የቴሌግራም አካውንቶች፦ የቆዩ ሰራተኞች የሽያጩን ብቻ ያያሉ፤ የትምህርት ቤቱን አድሚኑ ሲያበራላቸው ብቻ።
  * የማርኬቱ ፈቃዶች በሙሉ በነባሪ ጠፍተዋል፤ የቆዩ የቴሌግራም ሰራተኞች አድሚኑ ሳያበራላቸው ምንም አዲስ ነገር አያዩም።
  */
 export const PERMISSIONS = [
@@ -15,6 +16,8 @@ export const PERMISSIONS = [
   { id: "verifications", group: "market", label: "Verify sellers", hint: "Sees ID photos, ID numbers and bank details.", defaultOn: false },
   { id: "reports", group: "market", label: "Handle reports", hint: "Reports, contact messages and blocked chat attempts.", defaultOn: false },
   { id: "users", group: "market", label: "See and suspend users", hint: "The user list with wallet balances, suspending users and the verified badge.", defaultOn: false },
+  { id: "salesAccount", group: "accounts", label: "Sales Telegram", hint: "Chats of the account that sells social media accounts.", defaultOn: true },
+  { id: "schoolAccount", group: "accounts", label: "School Telegram", hint: "Chats of the Ethio Computer School (e-learning) account.", defaultOn: false },
   { id: "chats", group: "telegram", label: "Read chats", hint: "Without this the staff member can't open the Telegram page at all.", defaultOn: true },
   { id: "customerDetails", group: "telegram", label: "See customer details", hint: "Phone numbers, emails and accounts in the eye window.", defaultOn: true },
   { id: "aiSummary", group: "telegram", label: "See AI summaries and deals", hint: "What happened in the chat and the deals AI found.", defaultOn: true },
@@ -24,10 +27,13 @@ export const PERMISSIONS = [
   { id: "profit", group: "telegram", label: "See purchase prices and profit", hint: "What the company paid sellers, the profit and the Channels & profit page.", defaultOn: false },
   { id: "sales", group: "telegram", label: "See the sales page", hint: "All sales and payments found by AI.", defaultOn: false },
   { id: "alerts", group: "telegram", label: "See alerts and deleted messages", hint: "Side-deal alerts, deleted messages and text before edits.", defaultOn: false },
-] as const satisfies readonly { id: string; group: "market" | "telegram"; label: MessageKey; hint: MessageKey; defaultOn: boolean }[];
+] as const satisfies readonly { id: string; group: "market" | "accounts" | "telegram"; label: MessageKey; hint: MessageKey; defaultOn: boolean }[];
 
 export type Permission = (typeof PERMISSIONS)[number]["id"];
 export type Permissions = Record<Permission, boolean>;
+
+/** የትምህርት ቤቱ ቴሌግራም ዝርዝር (ምናሌው ይህንን ሙሉ አድራሻ ያወዳድራል)። */
+export const SCHOOL_INBOX = "/admin/telegram?category=school";
 
 export function isPermission(value: string): value is Permission {
   return PERMISSIONS.some((permission) => permission.id === value);
@@ -51,7 +57,8 @@ export function staffPages(can: Permissions): string[] {
     ...(can.users ? ["/admin/users"] : []),
     ...(can.reports ? ["/admin/reports"] : []),
     ...(can.listings || can.ordersDecide ? ["/admin/talent"] : []),
-    ...(can.chats ? ["/admin/telegram"] : []),
+    ...(can.chats && can.salesAccount ? ["/admin/telegram"] : []),
+    ...(can.chats && can.schoolAccount ? [SCHOOL_INBOX] : []),
     ...(can.chats && can.sales ? ["/admin/telegram/sales"] : []),
     ...(can.chats && can.profit ? ["/admin/telegram/channels"] : []),
     "/admin/password",

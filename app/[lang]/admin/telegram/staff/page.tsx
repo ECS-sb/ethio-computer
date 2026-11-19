@@ -3,7 +3,9 @@ import { ActionButton, ActionForm, SubmitButton } from "@/components/action-form
 import { StaffSwitch } from "@/components/telegram/staff-switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { addTelegramStaffAction, removeTelegramStaffAction, resetStaffPasswordAction } from "@/lib/actions";
+import { addTelegramStaffAction, removeTelegramStaffAction, resetStaffPasswordAction, setTelegramAccountCategoryAction } from "@/lib/actions";
+import { db } from "@/lib/db";
+import { ACCOUNT_CATEGORIES, categoryLabels, fromDbCategory, toDbCategory } from "@/lib/telegram/accounts";
 import { getT, pageTitle } from "@/lib/i18n-server";
 import type { MessageKey } from "@/lib/messages";
 import { requireAdmin } from "@/lib/session";
@@ -15,6 +17,7 @@ export const generateMetadata = pageTitle("Staff");
 
 const groups: { id: (typeof PERMISSIONS)[number]["group"]; title: MessageKey }[] = [
   { id: "market", title: "Marketplace" },
+  { id: "accounts", title: "Which Telegram accounts" },
   { id: "telegram", title: "Telegram" },
 ];
 
@@ -25,7 +28,10 @@ const groups: { id: (typeof PERMISSIONS)[number]["group"]; title: MessageKey }[]
 export default async function AdminStaffPage() {
   const t = await getT();
   await requireAdmin();
-  const staff = await listStaff();
+  const [staff, connections] = await Promise.all([
+    listStaff(),
+    db.telegramConnection.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, ownerName: true, ownerUsername: true, category: true, isEnabled: true } }),
+  ]);
 
   return (
     <>
@@ -35,6 +41,52 @@ export default async function AdminStaffPage() {
           {t("Add your staff with an email and a starting password. They sign in at ethiocomputer.com/staff, can change their password themselves, and see only what you turn on below.")}
         </p>
       </div>
+
+      {/* የተገናኙት የቴሌግራም አካውንቶች፦ አድሚኑ እያንዳንዱን የሽያጭ ወይም የትምህርት ቤት ብሎ ይመድባል። */}
+      <section className="flex flex-col gap-4 rounded-xl bg-card/70 p-6 ring-1 ring-foreground/10">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-semibold">{t("Connected Telegram accounts")}</h2>
+          <p className="text-sm text-muted-foreground">
+            {t("Choose which list each account belongs to. Staff only see the chats of the lists you turn on for them below.")}
+          </p>
+        </div>
+        {connections.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("No Telegram account is connected yet.")}</p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {connections.map((connection) => {
+              const current = fromDbCategory(connection.category);
+              return (
+                <li key={connection.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3 first:border-t-0 first:pt-0">
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate font-medium">{connection.ownerName}</span>
+                    <span dir="ltr" className="truncate text-xs text-muted-foreground">
+                      {connection.ownerUsername ? `@${connection.ownerUsername}` : null}
+                      {connection.isEnabled ? null : ` · ${t("Paused")}`}
+                    </span>
+                  </span>
+                  <span className="flex gap-2">
+                    {ACCOUNT_CATEGORIES.map((category) => (
+                      <ActionButton
+                        key={category}
+                        action={setTelegramAccountCategoryAction}
+                        id={connection.id}
+                        fields={{ category: toDbCategory(category) }}
+                        variant={category === current ? "default" : "outline"}
+                        size="sm"
+                        aria-pressed={category === current}
+                        disabled={category === current}
+                      >
+                        {t(categoryLabels[category])}
+                      </ActionButton>
+                    ))}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       <ActionForm action={addTelegramStaffAction} className="grid gap-4 rounded-xl bg-card/70 p-6 ring-1 ring-foreground/10 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_auto] xl:items-end">
         <div className="flex flex-col gap-1.5">

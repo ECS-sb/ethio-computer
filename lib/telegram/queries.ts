@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import type { DbAccountCategory } from "@/lib/telegram/accounts";
 import { aiEnabled, AI_MODEL } from "@/lib/telegram/ai";
 import { countPending } from "@/lib/telegram/analyze";
 import { summarizeChannels } from "@/lib/telegram/channels";
@@ -8,14 +9,15 @@ import { startOfTodayInAddis, summarizeDeals } from "@/lib/telegram/stats";
 
 const DAY = 24 * 60 * 60 * 1000;
 
-export async function getTelegramSales() {
+/** categories፦ ሰራተኛው ማየት የሚችላቸው የአካውንት ምድቦች (የትምህርት ቤቱ ምዝገባዎች ለሽያጭ ሰራተኛ አይታዩም)። */
+export async function getTelegramSales(categories: DbAccountCategory[]) {
   const now = Date.now();
   const today = startOfTodayInAddis();
   const weekAgo = new Date(now - 7 * DAY);
   const monthAgo = new Date(now - 30 * DAY);
   const [deals, pending, soldChannels] = await Promise.all([
     db.telegramDeal.findMany({
-      where: { dealAt: { gte: monthAgo } },
+      where: { dealAt: { gte: monthAgo }, chat: { connection: { category: { in: categories } } } },
       orderBy: { dealAt: "desc" },
       take: 300,
       select: {
@@ -121,7 +123,7 @@ export async function getTelegramChat(id: string) {
       profile: true,
       tags: true,
       _count: { select: { messages: true } },
-      connection: { select: { ownerName: true, ownerUsername: true, canReply: true, isEnabled: true } },
+      connection: { select: { ownerName: true, ownerUsername: true, canReply: true, isEnabled: true, category: true } },
       suggestedReply: true,
       suggestedForMessageId: true,
       deals: {

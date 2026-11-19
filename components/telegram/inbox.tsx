@@ -83,6 +83,7 @@ export async function Inbox({
             className="h-10 border-transparent bg-muted ps-10 dark:bg-muted"
             autoComplete="off"
           />
+          {params.category && params.category !== "sales" ? <input type="hidden" name="category" value={params.category} /> : null}
           {params.folder !== "all" ? <input type="hidden" name="folder" value={params.folder} /> : null}
           {params.account ? <input type="hidden" name="account" value={params.account} /> : null}
         </form>

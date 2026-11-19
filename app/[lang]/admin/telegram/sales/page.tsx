@@ -5,6 +5,7 @@ import { analyzePendingTelegramAction } from "@/lib/actions";
 import { formatDateTime, formatPrice } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
 import { requireTelegramViewer } from "@/lib/telegram/access";
+import { allowedCategories, toDbCategory } from "@/lib/telegram/accounts";
 import { dealKindLabels, dealStatusLabels, paymentLabel } from "@/lib/telegram/labels";
 import { getTelegramSales } from "@/lib/telegram/queries";
 
@@ -22,7 +23,7 @@ function paymentVariant(paidToCompany: boolean | null) {
 export default async function AdminTelegramSalesPage() {
   const t = await getT();
   const viewer = await requireTelegramViewer("sales");
-  const data = await getTelegramSales();
+  const data = await getTelegramSales(allowedCategories(viewer.can).map(toDbCategory));
   const tiles = [
     { label: t("Sales today"), value: data.today.sales },
     { label: t("Paid today"), value: formatPrice(t, data.today.paidEtb) },

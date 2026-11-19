@@ -17,7 +17,8 @@ export const folderLabels: Record<Folder, MessageKey> = {
   receipts: "Receipts",
 };
 
-export type InboxParams = { folder: Folder; q: string; account: string };
+/** category፦ "sales" (ነባሪ) ወይም "school"፤ ገጹ ሰራተኛው የተፈቀደለትን ምድብ ብቻ እንዲያይ ያስተካክለዋል። */
+export type InboxParams = { folder: Folder; q: string; account: string; category: string };
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -31,12 +32,14 @@ export function parseInboxParams(params: SearchParams): InboxParams {
     folder: (FOLDERS as readonly string[]).includes(folder) ? (folder as Folder) : "all",
     q: first(params.q).trim().slice(0, 100),
     account: first(params.account).slice(0, 100),
+    category: first(params.category).slice(0, 20),
   };
 }
 
 /** ነባሪ ያልሆኑትን ብቻ የያዘ "?folder=…&q=…" (ምንም ከሌለ ባዶ)። */
 export function inboxQuery(params: Partial<InboxParams>): string {
   const query = new URLSearchParams();
+  if (params.category && params.category !== "sales") query.set("category", params.category);
   if (params.folder && params.folder !== "all") query.set("folder", params.folder);
   if (params.account) query.set("account", params.account);
   if (params.q) query.set("q", params.q);

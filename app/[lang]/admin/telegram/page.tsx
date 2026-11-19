@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
 import { MessagesSquareIcon } from "lucide-react";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { FolderBar } from "@/components/telegram/folder-bar";
@@ -7,6 +8,7 @@ import { TelegramHeader } from "@/components/telegram/telegram-header";
 import { TelegramWorkspace } from "@/components/telegram/workspace";
 import { getT, pageTitle } from "@/lib/i18n-server";
 import { requireTelegramViewer } from "@/lib/telegram/access";
+import { resolveCategory } from "@/lib/telegram/accounts";
 import { parseInboxParams } from "@/lib/telegram/folders";
 import { getInbox } from "@/lib/telegram/inbox";
 import { readLayoutPrefs } from "@/lib/telegram/layout-prefs";
@@ -18,10 +20,14 @@ export default async function AdminTelegramPage({ searchParams }: { searchParams
   const viewer = await requireTelegramViewer();
   const params = parseInboxParams(await searchParams);
   if (!viewer.can.alerts && params.folder === "alerts") params.folder = "all";
+  // የሽያጭ ወይም የትምህርት ቤት ቻቶች፦ ሰራተኛው የተፈቀደለትን ምድብ ብቻ ያያል።
+  const category = resolveCategory(params.category, viewer.can);
+  if (!category) notFound();
+  params.category = category;
   const store = await cookies();
   const prefs = readLayoutPrefs((name) => store.get(name)?.value);
   const now = new Date();
-  const inbox = await getInbox(params, prefs.period);
+  const inbox = await getInbox(params, prefs.period, category);
 
   return (
     <>

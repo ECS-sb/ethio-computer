@@ -470,9 +470,17 @@ enum TelegramAlertSeverity {
   HIGH
 }
 
+/// የድርጅቱ የቴሌግራም አካውንት ዓይነት፦ SALES (የሶሻል ሚዲያ አካውንት ሽያጭ) ወይም SCHOOL (የኢትዮ ኮምፒውተር ትምህርት ቤት / e-learning)።
+enum TelegramAccountCategory {
+  SALES
+  SCHOOL
+}
+
 /// አንድ የድርጅት የቴሌግራም አካውንት ከቦቱ ጋር ያለው ግንኙነት። id የቴሌግራሙ business_connection_id ነው።
+/// category፦ አድሚኑ በሰራተኞች ገጽ ይመርጣል፤ ሰራተኞች የተፈቀደላቸውን ምድብ ቻቶች ብቻ ያያሉ።
 model TelegramConnection {
   id            String   @id
+  category      TelegramAccountCategory @default(SALES)
   ownerId       BigInt
   ownerChatId   BigInt
   ownerName     String

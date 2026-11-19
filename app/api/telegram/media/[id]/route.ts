@@ -1,4 +1,4 @@
-import { getTelegramViewer } from "@/lib/telegram/access";
+import { canSeeChat, getTelegramViewer } from "@/lib/telegram/access";
 import { loadMedia } from "@/lib/telegram/media";
 import { canShowInline } from "@/lib/telegram/media-kind";
 
@@ -10,6 +10,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const viewer = await getTelegramViewer();
   if (!viewer?.can.chats) return new Response(null, { status: 404 });
   const { id } = await params;
+  if (!(await canSeeChat(viewer, { messageId: id }))) return new Response(null, { status: 404 });
   const full = new URL(request.url).searchParams.get("full") === "1";
   const media = await loadMedia(id, full);
   if (!media) return new Response(null, { status: 404 });

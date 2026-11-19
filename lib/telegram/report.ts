@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { categoryLabels, fromDbCategory } from "@/lib/telegram/accounts";
 import { createT, localePath, type Locale, type T } from "@/lib/i18n";
 import { escapeHtml, notifyOwners, ownerChatIds, sendMessage } from "@/lib/telegram/api";
 import { waitingSince } from "@/lib/telegram/inbox";
@@ -25,7 +26,7 @@ function link(url: string | null, label: string): string {
 export async function buildDailyReport(t: T, locale: Locale, now = new Date()): Promise<string> {
   const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const [connections, messages, newChats, waiting, alerts, deals] = await Promise.all([
-    db.telegramConnection.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, ownerName: true, ownerUsername: true, isEnabled: true } }),
+    db.telegramConnection.findMany({ orderBy: [{ category: "asc" }, { createdAt: "asc" }], select: { id: true, ownerName: true, ownerUsername: true, isEnabled: true, category: true } }),
     db.telegramMessage.findMany({
       where: { sentAt: { gte: since } },
       orderBy: { sentAt: "asc" },
@@ -52,7 +53,8 @@ export async function buildDailyReport(t: T, locale: Locale, now = new Date()): 
     const stats = replyStats(own);
     const count = (groups: { connectionId: string; _count: { _all: number } }[]) =>
       groups.find((group) => group.connectionId === connection.id)?._count._all ?? 0;
-    const title = connection.ownerUsername ? `${connection.ownerName} (@${connection.ownerUsername})` : connection.ownerName;
+    const owner = connection.ownerUsername ? `${connection.ownerName} (@${connection.ownerUsername})` : connection.ownerName;
+    const title = `${t(categoryLabels[fromDbCategory(connection.category)])} · ${owner}`;
     lines.push(
       "",
       `<b>${escapeHtml(title)}</b>${connection.isEnabled ? "" : ` · ${escapeHtml(t("Paused"))}`}`,

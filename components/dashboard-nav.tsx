@@ -1,12 +1,13 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   BadgeCheckIcon,
   BadgeDollarSignIcon,
   BriefcaseIcon,
   ChartNoAxesCombinedIcon,
   FlagIcon,
+  GraduationCapIcon,
   HandCoinsIcon,
   LayoutDashboardIcon,
   ListChecksIcon,
@@ -27,6 +28,7 @@ import {
 import { LocaleLink, useT } from "@/components/i18n-provider";
 import { useSidebarCompact } from "@/components/sidebar-layout";
 import { stripLocale } from "@/lib/i18n";
+import { SCHOOL_INBOX } from "@/lib/telegram/permissions";
 import type { MessageKey } from "@/lib/messages";
 import { cn } from "@/lib/utils";
 
@@ -79,7 +81,8 @@ const groups: Record<"user" | "admin", Group[]> = {
         { href: "/admin/users", label: "Users", icon: UsersIcon },
         { href: "/admin/reports", label: "Reports", icon: FlagIcon },
         { href: "/admin/talent", label: "Talent", icon: BriefcaseIcon },
-        { href: "/admin/telegram", label: "Telegram", icon: SendIcon },
+        { href: "/admin/telegram", label: "Sales Telegram", icon: SendIcon },
+        { href: SCHOOL_INBOX, label: "School Telegram", icon: GraduationCapIcon },
         { href: "/admin/telegram/sales", label: "Telegram sales", icon: BadgeDollarSignIcon },
         { href: "/admin/telegram/channels", label: "Channels & profit", icon: ChartNoAxesCombinedIcon },
         { href: "/admin/telegram/staff", label: "Staff", icon: UserCogIcon },
@@ -93,6 +96,8 @@ const groups: Record<"user" | "admin", Group[]> = {
 export function DashboardNav({ area, only }: { area: keyof typeof groups; only?: string[] }) {
   const t = useT();
   const pathname = stripLocale(usePathname());
+  // የሽያጩና የትምህርት ቤቱ ቴሌግራም አንድ ገጽ ናቸው፤ የሚለዩት በ?category= ነው።
+  const category = useSearchParams().get("category") ?? "sales";
   // ምናሌው ሲጠብ (በኮምፒውተር ስክሪን) አዶዎቹ ብቻ ይታያሉ፤ ስሙ በtitle እና ለስክሪን አንባቢ ይቀራል።
   const compact = useSidebarCompact();
 
@@ -105,12 +110,15 @@ export function DashboardNav({ area, only }: { area: keyof typeof groups; only?:
         <div key={group.title} className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-stretch">
           {only ? null : <p className={cn("hidden px-4 pt-2 text-xs font-semibold text-muted-foreground", compact ? "lg:sr-only" : "lg:block")}>{t(group.title)}</p>}
           {group.items.map((item) => {
-            const hasSubpages = ["/dashboard/messages", "/dashboard/jobs", "/dashboard/talent", "/admin/telegram", "/admin/telegram/channels", "/admin/talent"].includes(item.href);
+            const [itemPath, itemQuery] = item.href.split("?");
+            const itemCategory = new URLSearchParams(itemQuery).get("category") ?? "sales";
+            const hasSubpages = ["/dashboard/messages", "/dashboard/jobs", "/dashboard/talent", "/admin/telegram", SCHOOL_INBOX, "/admin/telegram/channels", "/admin/talent"].includes(item.href);
             // ንዑስ ገጹ የራሱ ሊንክ ካለው (ለምሳሌ /admin/telegram/sales) የወላጁ ሊንክ አይበራም።
             const ownedByChild = group.items.some(
-              (other) => other.href.startsWith(`${item.href}/`) && (pathname === other.href || pathname.startsWith(`${other.href}/`))
+              (other) => other.href.startsWith(`${itemPath}/`) && (pathname === other.href || pathname.startsWith(`${other.href}/`))
             );
-            const active = pathname === item.href || (hasSubpages && pathname.startsWith(`${item.href}/`) && !ownedByChild);
+            const samePage = pathname === itemPath || (hasSubpages && pathname.startsWith(`${itemPath}/`) && !ownedByChild);
+            const active = samePage && (itemPath !== "/admin/telegram" || itemCategory === category);
             return (
               <LocaleLink
                 key={item.href}

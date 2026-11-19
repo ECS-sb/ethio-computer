@@ -15,7 +15,7 @@ import { isAdminEmail, requestLocale, requireAdmin, requireUser } from "@/lib/se
 import { aiEnabled } from "@/lib/telegram/ai";
 import { analyzeChat, analyzePending } from "@/lib/telegram/analyze";
 import * as channels from "@/lib/telegram/channel-store";
-import { getTelegramViewer } from "@/lib/telegram/access";
+import { canSeeChat, getTelegramViewer } from "@/lib/telegram/access";
 import { isPermission, type Permission } from "@/lib/telegram/permissions";
 import * as outbox from "@/lib/telegram/outbox";
 import * as staff from "@/lib/telegram/staff";
@@ -283,16 +283,20 @@ export async function resolveContactAction(data: FormData) {
 }
 const NOT_ALLOWED: ActionResult = { ok: false, message: "You don't have permission to do this." };
 
-/** የቴሌግራም ተግባራት፦ አድሚን ወይም ፈቃዱ የተሰጠው ሰራተኛ ብቻ። */
-async function telegramAllowed(permission: Permission): Promise<boolean> {
+/**
+ * የቴሌግራም ተግባራት፦ አድሚን ወይም ፈቃዱ የተሰጠው ሰራተኛ ብቻ።
+ * chat ሲሰጥ ያ ቻት ሰራተኛው ማየት በሚችለው ምድብ (የሽያጭ/የትምህርት ቤት) አካውንት ውስጥ መሆን አለበት።
+ */
+async function telegramAllowed(permission: Permission, chat?: Parameters<typeof canSeeChat>[1]): Promise<boolean> {
   const viewer = await getTelegramViewer();
-  return Boolean(viewer?.can.chats && viewer.can[permission]);
+  if (!viewer?.can.chats || !viewer.can[permission]) return false;
+  return chat ? canSeeChat(viewer, chat) : true;
 }
 
 export async function resolveTelegramAlertAction(data: FormData): Promise<ActionResult> {
-  if (!(await telegramAllowed("alerts"))) return NOT_ALLOWED;
   const parsed = id.safeParse(field(data, "id"));
   if (!parsed.success) return INVALID;
+  if (!(await telegramAllowed("alerts", { alertId: parsed.data }))) return NOT_ALLOWED;
   return run("Resolved.", async () => {
     await db.telegramAlert.update({ where: { id: parsed.data }, data: { resolved: true } });
   });
@@ -357,7 +361,7 @@ export async function unlinkTelegramChannelAction(data: FormData): Promise<Actio
 }
 
 export async function addTelegramChannelAction(data: FormData): Promise<ActionResult> {
-  if (!(await telegramAllowed("channels"))) return NOT_ALLOWED;
+  if (!(await telegramAllowed("channels", { chatId: String(data.get("id") ?? "") }))) return NOT_ALLOWED;
   const parsed = z
     .object({
       id,
@@ -387,6 +391,7 @@ export async function sendTelegramReplyAction(data: FormData): Promise<ActionRes
   if (!viewer?.can.chats || !viewer.can.reply) return NOT_ALLOWED;
   const parsed = z.object({ id, text: z.string().trim().min(1).max(4000) }).safeParse(Object.fromEntries(data));
   if (!parsed.success) return INVALID;
+  if (!(await canSeeChat(viewer, { chatId: parsed.data.id }))) return NOT_ALLOWED;
   return run("Sent.", async () => {
     await outbox.sendReply(parsed.data.id, parsed.data.text, { userId: viewer.userId, name: viewer.name });
   });
@@ -397,6 +402,7 @@ export async function relayTelegramMessageAction(data: FormData): Promise<Action
   if (!viewer?.can.chats || !viewer.can.reply || !viewer.can.channels) return NOT_ALLOWED;
   const parsed = z.object({ id, to: id }).safeParse(Object.fromEntries(data));
   if (!parsed.success) return INVALID;
+  if (!(await canSeeChat(viewer, { messageId: parsed.data.id })) || !(await canSeeChat(viewer, { chatId: parsed.data.to }))) return NOT_ALLOWED;
   return run("Sent.", async () => {
     await outbox.relayMessage(parsed.data.id, parsed.data.to, { userId: viewer.userId, name: viewer.name });
   });
@@ -409,6 +415,7 @@ export async function suggestTelegramReplyAction(chatId: string, force: boolean)
   if (!viewer?.can.chats || !viewer.can.reply) return NOT_ALLOWED;
   const parsed = id.safeParse(chatId);
   if (!parsed.success) return INVALID;
+  if (!(await canSeeChat(viewer, { chatId: parsed.data }))) return NOT_ALLOWED;
   try {
     const text = await suggestionFor(parsed.data, force === true);
     return text ? { ok: true, message: "Saved.", text } : { ok: false, message: "AI could not suggest a reply for this chat." };
@@ -448,6 +455,16 @@ export async function setTelegramStaffPermissionAction(data: FormData): Promise<
   if (!parsed.success || !isPermission(parsed.data.permission)) return INVALID;
   const permission = parsed.data.permission;
   return run("Saved.", () => staff.setStaffPermission(parsed.data.id, permission, parsed.data.enabled));
+}
+
+/** አድሚኑ አንድን የተገናኘ የቴሌግራም አካውንት የሽያጭ ወይም የትምህርት ቤት ብሎ ይመድባል። */
+export async function setTelegramAccountCategoryAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = z.object({ id: z.string().min(1).max(200), category: z.enum(["SALES", "SCHOOL"]) }).safeParse(Object.fromEntries(data));
+  if (!parsed.success) return INVALID;
+  return run("Saved.", async () => {
+    await db.telegramConnection.update({ where: { id: parsed.data.id }, data: { category: parsed.data.category } });
+  });
 }
 
 export async function setTelegramStaffActiveAction(data: FormData): Promise<ActionResult> {

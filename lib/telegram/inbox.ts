@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { toDbCategory, type AccountCategory } from "@/lib/telegram/accounts";
 import { FOLDERS, type Folder, type InboxParams } from "@/lib/telegram/folders";
 import { periodStart, type PeriodId } from "@/lib/telegram/periods";
 import { WITHDRAWAL_TAG } from "@/lib/telegram/profile";
@@ -56,7 +57,7 @@ type PeriodRow = { inbound: number; outbound: number; people: number; replies: n
  * በተመረጠው ጊዜ ውስጥ የመጡና የተላኩ መልዕክቶች፣ የጻፉ ሰዎች እና የምላሽ ጊዜ (በአንድ SQL፣ ብዙ መልዕክት ቢኖርም)።
  * የምላሽ ጊዜ፦ ደንበኛው ከሰራተኛው በኋላ (ወይም መጀመሪያ) የጻፈው መልዕክት እስከ ቀጣዩ የሰራተኛ መልዕክት ድረስ።
  */
-async function periodStats(since: Date, account: string | null) {
+async function periodStats(since: Date, accounts: string[]) {
   const [row] = await db.$queryRaw<PeriodRow[]>`
     WITH msgs AS (
       SELECT m."chatId", m.direction, m."sentAt",
@@ -64,7 +65,7 @@ async function periodStats(since: Date, account: string | null) {
         MIN(CASE WHEN m.direction = 'OUT' THEN m."sentAt" END) OVER (w ROWS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING) AS next_reply
       FROM telegram_message m
       JOIN telegram_chat c ON c.id = m."chatId"
-      WHERE m."sentAt" >= ${since} AND (${account}::text IS NULL OR c."connectionId" = ${account}::text)
+      WHERE m."sentAt" >= ${since} AND c."connectionId" = ANY(${accounts})
       WINDOW w AS (PARTITION BY m."chatId" ORDER BY m."sentAt", m."messageId")
     ), waits AS (
       SELECT EXTRACT(EPOCH FROM (next_reply - "sentAt")) AS seconds
@@ -88,15 +89,22 @@ async function periodStats(since: Date, account: string | null) {
   };
 }
 
-export async function getInbox(params: InboxParams, period: PeriodId) {
+/** የአንድ ምድብ (የሽያጭ ወይም የትምህርት ቤት) ቻቶች፤ ሌላኛው ምድብ በዚህ ዝርዝር ውስጥ ፈጽሞ አይገባም። */
+export async function getInbox(params: InboxParams, period: PeriodId, category: AccountCategory) {
   const since = periodStart(period);
-  const byAccount: Prisma.TelegramChatWhereInput = params.account ? { connectionId: params.account } : {};
+  const connections = await db.telegramConnection.findMany({
+    where: { category: toDbCategory(category) },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, ownerName: true, ownerUsername: true, isEnabled: true },
+  });
+  const ids = connections.map((connection) => connection.id);
+  const accounts = params.account && ids.includes(params.account) ? [params.account] : ids;
+  const byAccount: Prisma.TelegramChatWhereInput = { connectionId: { in: accounts } };
   const bySearch: Prisma.TelegramChatWhereInput = params.q
     ? { OR: [{ name: { contains: params.q, mode: "insensitive" } }, { username: { contains: params.q, mode: "insensitive" } }] }
     : {};
 
-  const [connections, folderCounts, chats, stats, periodAlerts] = await Promise.all([
-    db.telegramConnection.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, ownerName: true, ownerUsername: true, isEnabled: true } }),
+  const [folderCounts, chats, stats, periodAlerts] = await Promise.all([
     Promise.all(FOLDERS.map((folder) => db.telegramChat.count({ where: { AND: [byAccount, folderWhere(folder)] } }))),
     db.telegramChat.findMany({
       where: { AND: [byAccount, folderWhere(params.folder), bySearch] },
@@ -117,14 +125,15 @@ export async function getInbox(params: InboxParams, period: PeriodId) {
         _count: { select: { alerts: { where: { resolved: false } } } },
       },
     }),
-    periodStats(since, params.account || null),
-    db.telegramAlert.count({ where: { createdAt: { gte: since }, ...(params.account ? { chat: { connectionId: params.account } } : {}) } }),
+    periodStats(since, accounts),
+    db.telegramAlert.count({ where: { createdAt: { gte: since }, chat: { connectionId: { in: accounts } } } }),
   ]);
 
   const waiting = await waitingCounts(chats.map((chat) => chat.id));
   const counts = Object.fromEntries(FOLDERS.map((folder, index) => [folder, folderCounts[index]])) as Record<Folder, number>;
 
   return {
+    category,
     connections,
     counts,
     chats: chats.map((chat) => ({ ...chat, waitingCount: waiting.get(chat.id) ?? 0 })),

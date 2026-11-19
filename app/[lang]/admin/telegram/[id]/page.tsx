@@ -1,13 +1,15 @@
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { ChatView } from "@/components/telegram/chat-view";
 import { FolderBar } from "@/components/telegram/folder-bar";
 import { Inbox } from "@/components/telegram/inbox";
 import { TelegramHeader } from "@/components/telegram/telegram-header";
 import { TelegramWorkspace } from "@/components/telegram/workspace";
-import { pageTitle } from "@/lib/i18n-server";
+import { localePath } from "@/lib/i18n";
+import { getLocale, pageTitle } from "@/lib/i18n-server";
 import { requireTelegramViewer } from "@/lib/telegram/access";
+import { canSeeCategory, fromDbCategory } from "@/lib/telegram/accounts";
 import { inboxQuery, parseInboxParams } from "@/lib/telegram/folders";
 import { getInbox } from "@/lib/telegram/inbox";
 import { readLayoutPrefs } from "@/lib/telegram/layout-prefs";
@@ -32,8 +34,17 @@ export default async function AdminTelegramChatPage({
   const store = await cookies();
   const prefs = readLayoutPrefs((name) => store.get(name)?.value);
   const now = new Date();
-  const [chat, inbox] = await Promise.all([getTelegramChat(id), getInbox(inboxParams, prefs.period)]);
-  if (!chat) notFound();
+  const chat = await getTelegramChat(id);
+  // የሌላኛው ምድብ (ለምሳሌ የትምህርት ቤቱ) ቻት ለማይፈቀድለት ሰራተኛ እንደሌለ ይቆጠራል።
+  if (!chat || !canSeeCategory(viewer.can, chat.connection.category)) notFound();
+  // ጎኑ ያለው ዝርዝር የዚህኑ ቻት አካውንት ምድብ ያሳያል።
+  const category = fromDbCategory(chat.connection.category);
+  // ከሪፖርት ወይም ከሽያጭ ገጽ የመጣ ሊንክ ምድቡን ላይዝ ይችላል፤ ምናሌው ትክክለኛውን ቴሌግራም እንዲያበራ ይጨመራል።
+  if ((inboxParams.category || "sales") !== category) {
+    redirect(localePath(await getLocale(), `/admin/telegram/${id}${inboxQuery({ ...inboxParams, category })}`));
+  }
+  inboxParams.category = category;
+  const inbox = await getInbox(inboxParams, prefs.period, category);
 
   return (
     <>
