@@ -1098,6 +1098,19 @@ export const am = {
   "Quick menu": "ፈጣን ምናሌ",
   "Home": "ቤት",
   "Me": "እኔ",
+
+  // ---- WhatsApp auto-replies (የት/ቤቱ ተማሪ ምዝገባ፤ አዝራሮቹ እስከ 20 ፊደል)
+  "Courses & prices": "ኮርሶችና ዋጋ",
+  Register: "ተመዝገብ",
+  "Talk to a person": "ሰው አናግረኝ",
+  "Hello {name}! 👋 Welcome to {school}.\n\nThis number is only for computer training registration. Please choose one of the options below.":
+    "ሰላም {name}! 👋 ወደ {school} እንኳን በደህና መጡ።\n\nይህ ቁጥር ለኮምፒውተር ስልጠና ምዝገባ ብቻ የሚያገለግል ነው። እባክዎ ከታች ካሉት አንዱን ይምረጡ።",
+  "Thank you! Our staff will send you the list of courses, prices and class times shortly.":
+    "እናመሰግናለን! የኮርሶቹን ዝርዝር፣ ዋጋ እና የትምህርት ሰዓቶችን ሰራተኞቻችን በቅርቡ ይልኩልዎታል።",
+  "Great! To register, please reply with:\n1. Your full name\n2. The course you want\n3. Your preferred time (morning, afternoon, evening or weekend)\n\nOur staff will confirm your registration.":
+    "በጣም ጥሩ! ለመመዝገብ እባክዎ የሚከተሉትን ይላኩልን፦\n1. ሙሉ ስምዎን\n2. የሚፈልጉትን ኮርስ\n3. የሚመችዎትን ሰዓት (ጠዋት፣ ከሰዓት፣ ማታ ወይም ቅዳሜና እሁድ)\n\nሰራተኞቻችን ምዝገባዎን ያረጋግጡልዎታል።",
+  "Thank you. A staff member will reply to you here soon.": "እናመሰግናለን። ከሰራተኞቻችን አንዱ በቅርቡ እዚሁ ይመልስልዎታል።",
+
 } as const;
 
 export type MessageKey = keyof typeof am;

@@ -673,3 +673,73 @@ model TelegramMediaFile {
 
   @@map("telegram_media_file")
 }
+
+// ---- WhatsApp (የት/ቤቱ ተማሪ ምዝገባ፤ WhatsApp Cloud API)
+
+enum WhatsAppDirection {
+  IN
+  OUT
+}
+
+/// OUT መልዕክት ከየት እንደተላከ፦ AUTO በሲስተሙ አውቶ ሪፕላይ፣ STAFF ከዌብሳይቱ፣ PHONE ከWhatsApp Business app (coexistence echo)።
+enum WhatsAppSource {
+  CUSTOMER
+  AUTO
+  STAFF
+  PHONE
+}
+
+/// ከአንድ ሰው (ተማሪ) ጋር ያለ ቻት። waId የዋትሳፕ መለያው (ስልክ ቁጥሩ፣ ያለ +) ነው።
+model WhatsAppChat {
+  id             String            @id @default(cuid())
+  waId           String            @unique
+  name           String
+  lastMessageAt  DateTime
+  lastDirection  WhatsAppDirection
+  lastInboundAt  DateTime?
+  lastOutboundAt DateTime?
+  /// የእንኳን ደህና መጡ ምናሌው የተላከበት የመጨረሻ ጊዜ (ደጋግሞ እንዳይላክ)
+  welcomedAt     DateTime?
+  /// ተማሪው "ሰው ያናግረኝ" ብሏል፤ staff እስኪመልስ ድረስ አውቶ ሪፕላዩ ዝም ይላል
+  needsHuman     Boolean           @default(false)
+  /// ከፌስቡክ/ኢንስታግራም ማስታወቂያ (Click-to-WhatsApp) ከመጣ፦ የማስታወቂያው መለያ፣ ርዕስ እና ሙሉ referral
+  adSourceId     String?
+  adHeadline     String?
+  referral       Json?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  messages WhatsAppMessage[]
+
+  @@index([lastMessageAt])
+  @@index([adSourceId])
+  @@map("whatsapp_chat")
+}
+
+model WhatsAppMessage {
+  id           String            @id @default(cuid())
+  chatId       String
+  chat         WhatsAppChat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  /// የዋትሳፕ መልዕክት መለያ (wamid…)፤ Meta አንድን webhook ደግሞ ሲልክ እንዳይደገም
+  waMessageId  String            @unique
+  direction    WhatsAppDirection
+  source       WhatsAppSource
+  /// text, image, audio, document, interactive, button, location, …
+  type         String
+  text         String            @default("")
+  /// ተማሪው የተጫነው አዝራር ወይም የምናሌ ምርጫ መለያ
+  replyId      String?
+  mediaId      String?
+  mimeType     String?
+  /// sent, delivered, read, failed (ለOUT መልዕክቶች)
+  status       String?
+  errorText    String?
+  sentByUserId String?
+  sentByName   String?
+  sentAt       DateTime
+  createdAt    DateTime          @default(now())
+
+  @@index([chatId, sentAt])
+  @@map("whatsapp_message")
+}
+
