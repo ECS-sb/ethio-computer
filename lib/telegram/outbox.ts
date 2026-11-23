@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { DomainError } from "@/lib/marketplace";
 import { sendBusinessFile, sendBusinessText, TelegramApiError } from "@/lib/telegram/api";
+import { maybeClaimStudent, staffIdForUser } from "@/lib/telegram/attribution";
 import { recordSentMessage } from "@/lib/telegram/ingest";
 import { storeMediaCopies } from "@/lib/telegram/media";
 import { isRelayableMedia } from "@/lib/telegram/media-kind";
@@ -30,10 +31,24 @@ function explain(error: unknown): never {
 }
 
 /** ከቴሌግራም የተመለሰውን መልዕክት ያስቀምጣል፣ የላከውን ሰራተኛ ይመዘግባል፣ ማስጠንቀቂያ ካለ ለባለቤቶች ይልካል። */
-async function record(sent: Awaited<ReturnType<typeof sendBusinessText>>, connectionId: string, sender: Sender, relayedFromId: string | null) {
-  const saved = await recordSentMessage(sent, connectionId, { skipDetection: relayedFromId !== null });
+async function record(
+  sent: Awaited<ReturnType<typeof sendBusinessText>>,
+  connectionId: string,
+  sender: Sender,
+  relayedFromId: string | null,
+  broadcastId: string | null = null
+) {
+  const saved = await recordSentMessage(sent, connectionId, { skipDetection: relayedFromId !== null || broadcastId !== null });
   if (saved.messageRowId) {
-    await db.telegramMessage.update({ where: { id: saved.messageRowId }, data: { sentByUserId: sender.userId, sentByName: sender.name.slice(0, 80), relayedFromId } });
+    // ከዌብሳይቱ የተላከ፦ የላከው ሰራተኛ እርግጠኛ ነው (አድሚን ከሆነ staffId ባዶ ይሆናል)።
+    const staffId = await staffIdForUser(sender.userId);
+    const row = await db.telegramMessage.update({
+      where: { id: saved.messageRowId },
+      data: { sentByUserId: sender.userId, sentByName: sender.name.slice(0, 80), relayedFromId, staffId, staffSource: "WEB", broadcastId },
+      select: { chatId: true, text: true },
+    });
+    // የማርኬቲንግ መልዕክት ተማሪውን ለላከው ሰራተኛ አያስመዘግብም።
+    if (staffId && !broadcastId) await maybeClaimStudent(row.chatId, staffId, row.text);
   }
   if (saved.mediaCopy) await storeMediaCopies([saved.mediaCopy]).catch((error) => console.error("telegram media copy failed:", error));
   if (saved.alerts.length > 0) await sendAlertNotifications(saved.alerts);
@@ -79,4 +94,20 @@ export async function relayMessage(fromMessageId: string, toChatRowId: string, s
     throw new DomainError("This message has nothing that can be sent on.");
   }
   return record(sent, chat.connection.id, sender, source.id);
+}
+
+/**
+ * የማርኬቲንግ መልዕክት ለአንድ ተማሪ ይልካል (ቴሌግራም ባለፉት 24 ሰዓታት ለጻፉት ብቻ ይፈቅዳል)። ማስጠንቀቂያ አይነሳበትም።
+ * ከተላከ true፣ ቴሌግራም ካልተቀበለው false ይመልሳል።
+ */
+export async function sendBroadcastMessage(chatRowId: string, text: string, sender: Sender, broadcastId: string): Promise<boolean> {
+  try {
+    const chat = await loadTarget(chatRowId);
+    const sent = await sendBusinessText(chat.connection.id, chat.chatId.toString(), text);
+    await record(sent, chat.connection.id, sender, null, broadcastId);
+    return true;
+  } catch (error) {
+    console.error(`telegram broadcast to ${chatRowId} failed:`, error instanceof Error ? error.message : error);
+    return false;
+  }
 }

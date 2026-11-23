@@ -62,3 +62,15 @@ export async function canSeeChat(viewer: TelegramViewer, by: { chatId?: string; 
         : null;
   return Boolean(chat && canSeeCategory(viewer.can, chat.connection.category));
 }
+
+/** የትምህርት ቤቱ ትንታኔ ወይም ማርኬቲንግ ገጽ፦ የትምህርት ቤቱን ቴሌግራም ማየትና ይህንን ፈቃድ የተሰጠው ብቻ (አድሚኑ ሁሉንም)። */
+export async function requireSchoolViewer(permission: "schoolAnalytics" | "marketing", path: string): Promise<TelegramViewer> {
+  await requireUser(path);
+  const viewer = await getTelegramViewer();
+  if (!viewer || !canUseSchool(viewer, permission)) notFound();
+  return viewer;
+}
+
+export function canUseSchool(viewer: TelegramViewer, permission: "schoolAnalytics" | "marketing"): boolean {
+  return viewer.can.chats && viewer.can.schoolAccount && viewer.can[permission];
+}

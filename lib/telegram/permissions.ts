@@ -27,6 +27,8 @@ export const PERMISSIONS = [
   { id: "profit", group: "telegram", label: "See purchase prices and profit", hint: "What the company paid sellers, the profit and the Channels & profit page.", defaultOn: false },
   { id: "sales", group: "telegram", label: "See the sales page", hint: "All sales and payments found by AI.", defaultOn: false },
   { id: "alerts", group: "telegram", label: "See alerts and deleted messages", hint: "Side-deal alerts, deleted messages and text before edits.", defaultOn: false },
+  { id: "schoolAnalytics", group: "telegram", label: "See school analytics", hint: "Each staff member's replies, registrations, money and receipts on the School Telegram.", defaultOn: false },
+  { id: "marketing", group: "telegram", label: "Send marketing messages", hint: "Student groups, the follow-up list, and sending one message to many students.", defaultOn: false },
 ] as const satisfies readonly { id: string; group: "market" | "accounts" | "telegram"; label: MessageKey; hint: MessageKey; defaultOn: boolean }[];
 
 export type Permission = (typeof PERMISSIONS)[number]["id"];
@@ -34,6 +36,8 @@ export type Permissions = Record<Permission, boolean>;
 
 /** የትምህርት ቤቱ ቴሌግራም ዝርዝር (ምናሌው ይህንን ሙሉ አድራሻ ያወዳድራል)። */
 export const SCHOOL_INBOX = "/admin/telegram?category=school";
+export const SCHOOL_ANALYTICS = "/admin/telegram/school";
+export const SCHOOL_MARKETING = "/admin/telegram/school/marketing";
 
 export function isPermission(value: string): value is Permission {
   return PERMISSIONS.some((permission) => permission.id === value);
@@ -61,6 +65,8 @@ export function staffPages(can: Permissions): string[] {
     ...(can.chats && can.schoolAccount ? [SCHOOL_INBOX] : []),
     ...(can.chats && can.sales ? ["/admin/telegram/sales"] : []),
     ...(can.chats && can.profit ? ["/admin/telegram/channels"] : []),
+    ...(can.chats && can.schoolAccount && can.schoolAnalytics ? [SCHOOL_ANALYTICS] : []),
+    ...(can.chats && can.schoolAccount && can.marketing ? [SCHOOL_MARKETING] : []),
     "/admin/password",
   ];
 }

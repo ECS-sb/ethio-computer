@@ -15,7 +15,12 @@ import { isAdminEmail, requestLocale, requireAdmin, requireUser } from "@/lib/se
 import { aiEnabled } from "@/lib/telegram/ai";
 import { analyzeChat, analyzePending } from "@/lib/telegram/analyze";
 import * as channels from "@/lib/telegram/channel-store";
-import { canSeeChat, getTelegramViewer } from "@/lib/telegram/access";
+import { canSeeChat, canUseSchool, getTelegramViewer } from "@/lib/telegram/access";
+import * as attribution from "@/lib/telegram/attribution";
+import { sendBroadcast } from "@/lib/telegram/broadcast";
+import { getSchoolAnalytics } from "@/lib/telegram/school";
+import { presetRange } from "@/lib/telegram/school-range";
+import { isSegment, parseClock } from "@/lib/telegram/school-rules";
 import { isPermission, type Permission } from "@/lib/telegram/permissions";
 import * as outbox from "@/lib/telegram/outbox";
 import * as staff from "@/lib/telegram/staff";
@@ -479,6 +484,76 @@ export async function removeTelegramStaffAction(data: FormData): Promise<ActionR
   const parsed = id.safeParse(field(data, "id"));
   if (!parsed.success) return INVALID;
   return run("Removed.", () => staff.removeStaff(parsed.data));
+}
+
+// ---- የትምህርት ቤቱ ቴሌግራም፦ የመለሰውን ሰራተኛ መለየት፣ ተማሪን መመደብ፣ ማርኬቲንግ
+
+const clock = z.string().trim().max(5).refine((value) => value === "" || parseClock(value) !== null);
+
+/** አድሚኑ የሰራተኛውን ፊርማ እና የስራ ሰዓት ያስገባል (ከስልክ የመለሱትን ለመለየት)። */
+export async function saveStaffRulesAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = z
+    .object({ id, signature: z.string().trim().max(40).default(""), shiftStart: clock.default(""), shiftEnd: clock.default("") })
+    .safeParse(Object.fromEntries(data));
+  if (!parsed.success) return INVALID;
+  const { signature, shiftStart, shiftEnd } = parsed.data;
+  const start = parseClock(shiftStart);
+  const end = parseClock(shiftEnd);
+  // ሰዓቱ ሁለቱም ወይም ምንም መሆን አለበት።
+  if ((start === null) !== (end === null) || (start !== null && start === end)) return { ok: false, message: "Enter both the start and end time, or leave both empty." };
+  if (signature !== "" && signature.length < 2) return INVALID;
+  return run("Saved.", () => attribution.saveStaffRules(parsed.data.id, { signature: signature || null, shiftStart: start, shiftEnd: end }));
+}
+
+/** ፊርማ ወይም ሰዓት ከተቀየረ በኋላ የቆዩትን መልዕክቶች (ያለፉት 90 ቀናት) እንደገና ይቆጥራል። */
+export async function reattributeSchoolAction(): Promise<ActionResult> {
+  await requireAdmin();
+  return run("Recounted.", async () => {
+    await attribution.reattributeSchool(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000));
+  });
+}
+
+const optionalStaff = z.preprocess((value) => (value === "" || value === undefined ? null : value), id.nullable());
+
+/** አድሚኑ ተማሪውን ላመጣው ሰራተኛ ይመድባል (ኮሚሽኑ የሚቆጠርለት)። */
+export async function setStudentOwnerAction(data: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = z.object({ id, staff: optionalStaff }).safeParse(Object.fromEntries(data));
+  if (!parsed.success) return INVALID;
+  return run("Saved.", () => attribution.setStudentOwner(parsed.data.id, parsed.data.staff));
+}
+
+export async function sendSchoolBroadcastAction(data: FormData): Promise<ActionResult> {
+  const viewer = await getTelegramViewer();
+  if (!viewer || !canUseSchool(viewer, "marketing")) return NOT_ALLOWED;
+  const parsed = z.object({ segment: z.string().refine(isSegment), text: z.string().trim().min(1).max(4000) }).safeParse(Object.fromEntries(data));
+  if (!parsed.success || !isSegment(parsed.data.segment)) return INVALID;
+  const segment = parsed.data.segment;
+  return run("Messages sent. The results are in the history below.", async () => {
+    await sendBroadcast(segment, parsed.data.text, { userId: viewer.userId, name: viewer.name });
+  });
+}
+
+export type SchoolQuickStats = {
+  ok: boolean;
+  staff: { key: string; name: string | null; replies: number; links: number; registered: number; paidStudents: number; etb: number }[];
+  totals: { inbound: number; newUsers: number; registered: number; paidStudents: number; etb: number; users: number; waitingNow: number };
+  segments: Record<string, number>;
+};
+
+/** ከትምህርት ቤቱ ቴሌግራም ጎን ያለው ትንሽ አዝራር፦ የዛሬ ቁጥሮች (ሲከፈት ብቻ ይጠየቃሉ፣ ገጹ በየ30 ሰከንዱ ሲታደስ አይደለም)። */
+export async function schoolQuickStatsAction(): Promise<SchoolQuickStats> {
+  const viewer = await getTelegramViewer();
+  const empty: SchoolQuickStats = { ok: false, staff: [], totals: { inbound: 0, newUsers: 0, registered: 0, paidStudents: 0, etb: 0, users: 0, waitingNow: 0 }, segments: {} };
+  if (!viewer || !canUseSchool(viewer, "schoolAnalytics")) return empty;
+  const data = await getSchoolAnalytics(presetRange("today"));
+  return {
+    ok: true,
+    staff: data.staffRows.map(({ key, name, replies, links, registered, paidStudents, etb }) => ({ key, name, replies, links, registered, paidStudents, etb })),
+    totals: { ...data.totals, waitingNow: data.waitingNow },
+    segments: data.segments,
+  };
 }
 
 export async function rejectListingAction(data: FormData): Promise<ActionResult> {

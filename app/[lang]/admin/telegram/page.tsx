@@ -4,10 +4,11 @@ import { MessagesSquareIcon } from "lucide-react";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { FolderBar } from "@/components/telegram/folder-bar";
 import { Inbox } from "@/components/telegram/inbox";
+import { SchoolQuickStats } from "@/components/telegram/school-quick-stats";
 import { TelegramHeader } from "@/components/telegram/telegram-header";
 import { TelegramWorkspace } from "@/components/telegram/workspace";
 import { getT, pageTitle } from "@/lib/i18n-server";
-import { requireTelegramViewer } from "@/lib/telegram/access";
+import { canUseSchool, requireTelegramViewer } from "@/lib/telegram/access";
 import { resolveCategory } from "@/lib/telegram/accounts";
 import { parseInboxParams } from "@/lib/telegram/folders";
 import { getInbox } from "@/lib/telegram/inbox";
@@ -36,6 +37,7 @@ export default async function AdminTelegramPage({ searchParams }: { searchParams
         mode="list"
         initialStatsOpen={prefs.statsOpen}
         initialListWidth={prefs.listWidth}
+        tools={category === "school" && canUseSchool(viewer, "schoolAnalytics") ? <SchoolQuickStats canMarketing={canUseSchool(viewer, "marketing")} /> : null}
         stats={viewer.can.analytics ? <TelegramHeader inbox={inbox} showAlerts={viewer.can.alerts} /> : null}
         folders={<FolderBar inbox={inbox} params={params} basePath="/admin/telegram" hidden={viewer.can.alerts ? [] : ["alerts"]} />}
         list={<Inbox inbox={inbox} params={params} basePath="/admin/telegram" selectedId={null} now={now} showAlerts={viewer.can.alerts} />}

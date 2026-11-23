@@ -21,6 +21,7 @@ export function TelegramWorkspace({
   folders,
   list,
   main,
+  tools = null,
 }: {
   mode: "list" | "chat";
   initialStatsOpen: boolean;
@@ -30,6 +31,8 @@ export function TelegramWorkspace({
   folders: React.ReactNode;
   list: React.ReactNode;
   main: React.ReactNode;
+  /** ከቁጥሮቹ ማብሪያ ጎን የሚታዩ ትናንሽ አዝራሮች (ለምሳሌ የትምህርት ቤቱ ትንታኔ) */
+  tools?: React.ReactNode;
 }) {
   const t = useT();
   const [statsOpen, setStatsOpen] = useState(initialStatsOpen);
@@ -61,6 +64,7 @@ export function TelegramWorkspace({
         {showStats ? stats : null}
         <div className="flex min-w-0 items-center gap-2">
           <div className="min-w-0 flex-1">{folders}</div>
+          {tools}
           {stats !== null ? (
             <Button type="button" variant="ghost" size="icon-sm" onClick={toggleStats} aria-label={statsLabel} title={statsLabel} aria-expanded={statsOpen}>
               {statsOpen ? <ChevronUpIcon /> : <ChartColumnIcon />}

@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { getBusinessConnection } from "@/lib/telegram/api";
+import { attributeMessage } from "@/lib/telegram/attribution";
 import { detectSideDeal, parseAllowlist, usernameFromEvidence, type Finding } from "@/lib/telegram/detect";
 import { mediaKind } from "@/lib/telegram/media-kind";
 import { extractContactDetails, mentionsWithdrawal, mergeProfile, readProfile, sameProfile, WITHDRAWAL_TAG } from "@/lib/telegram/profile";
@@ -199,6 +200,8 @@ async function saveMessage(message: TgMessage, isEdit: boolean, options: { skipD
   } else {
     // Telegram አንድን update ደግሞ ሊልክ ስለሚችል upsert ነው።
     row = await db.telegramMessage.upsert({ where: key, create: base, update: {}, select: { id: true, relayedFromId: true } });
+    // ከስልክ የተላከ መልዕክት የትኛው ሰራተኛ እንደላከው (በፊርማ፣ በተመደበው ሰራተኛ ወይም በስራ ሰዓት)።
+    if (outgoing) await attributeMessage(row.id).catch((error) => console.error("telegram attribution failed:", error));
   }
   // ከሻጩ ወደ ገዢው የተላለፈ መልዕክት (ኮድ፣ ኢሜይል…) የሰራተኛ ሽሽጥ ስላልሆነ አይፈተሽም።
   const relayed = Boolean(options.skipDetection || row.relayedFromId);

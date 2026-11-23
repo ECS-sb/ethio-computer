@@ -11,7 +11,7 @@ import { ProfileDialog } from "@/components/telegram/profile-dialog";
 import { RelayButtons, type RelayTarget } from "@/components/telegram/relay-button";
 import { RoleBadge } from "@/components/telegram/role-badge";
 import { Badge } from "@/components/ui/badge";
-import { analyzeTelegramChatAction, resolveTelegramAlertAction } from "@/lib/actions";
+import { analyzeTelegramChatAction, resolveTelegramAlertAction, setStudentOwnerAction } from "@/lib/actions";
 import { formatDateTime, formatPrice } from "@/lib/catalog";
 import type { T } from "@/lib/i18n";
 import { getT } from "@/lib/i18n-server";
@@ -25,6 +25,8 @@ import { canReplyNow } from "@/lib/telegram/reply-window";
 import { summarizeDeals } from "@/lib/telegram/stats";
 import type { getTelegramChat } from "@/lib/telegram/queries";
 import { getLinkCandidates, TELEGRAM_CHAT_PAGE } from "@/lib/telegram/queries";
+import { listStaffNames } from "@/lib/telegram/school";
+import type { MessageKey } from "@/lib/messages";
 import { cn } from "@/lib/utils";
 
 type ChatData = NonNullable<Awaited<ReturnType<typeof getTelegramChat>>>;
@@ -76,6 +78,19 @@ function MessageMedia({ t, message }: { t: T; message: Message }) {
   return label ? <span className="block text-xs font-semibold">[{label}]</span> : null;
 }
 
+/** ከስልክ የተላከ መልዕክት የትኛው ሰራተኛ እንደላከው እንዴት እንደታወቀ (ቴሌግራም ዲቫይሱን አይነግርም)። */
+const staffSourceLabels: Record<"SIGNATURE" | "CHAT_OWNER" | "SHIFT", MessageKey> = {
+  SIGNATURE: "by signature",
+  CHAT_OWNER: "assigned student",
+  SHIFT: "by working hours",
+};
+
+function senderLabel(t: T, message: Message): string | null {
+  if (message.sentByName) return message.sentByName;
+  if (message.staff && message.staffSource && message.staffSource !== "WEB") return `${message.staff.name} · ${t(staffSourceLabels[message.staffSource])}`;
+  return null;
+}
+
 function MessageBubble({ t, message, showMonitoring, relayTargets }: { t: T; message: Message; showMonitoring: boolean; relayTargets: RelayTarget[] }) {
   // "ለገዢው/ለሻጩ ላክ" የሚታየው ሰውየው በጻፈው (ያልተሰረዘ፣ የሚላክ ነገር ያለው) መልዕክት ስር ብቻ ነው።
   const relayable = relayTargets.length > 0 && message.direction === "IN" && !message.deletedAt && (message.text.trim() !== "" || isRelayableMedia(message.mediaType));
@@ -101,7 +116,8 @@ function MessageBubble({ t, message, showMonitoring, relayTargets }: { t: T; mes
         {message.text}
         <span className="mt-1 flex items-center justify-end gap-2 text-[11px] opacity-70">
           {message.relayedFromId ? <span>{t("Relayed")}</span> : null}
-          {message.sentByName ? <span className="font-semibold">{message.sentByName}</span> : message.viaBot ? <span>{t("Sent by bot")}</span> : null}
+          {message.broadcastId ? <span>{t("Marketing")}</span> : null}
+          {senderLabel(t, message) ? <span className="font-semibold">{senderLabel(t, message)}</span> : message.viaBot ? <span>{t("Sent by bot")}</span> : null}
           {message.editedAt ? <span>{t("Edited")}</span> : null}
           {message.deletedAt ? <span className="font-semibold">{t("Deleted")}</span> : null}
           <time dateTime={message.sentAt.toISOString()}>{messageTime(message.sentAt)}</time>
@@ -161,6 +177,41 @@ export async function ChatView({ chat, backHref, now, viewer }: { chat: ChatData
   const awaitingReply = lastVisible?.direction === "IN";
   const storedSuggestion = awaitingReply && lastIn && chat.suggestedForMessageId === lastIn.id ? chat.suggestedReply : null;
   const autoSuggestFor = composerState === "ready" && awaitingReply && !storedSuggestion && lastIn ? lastIn.id : null;
+
+  // የትምህርት ቤቱ ተማሪ፦ ያመጣው ሰራተኛ (ኮሚሽኑ የሚቆጠርለት)፤ አድሚኑ ይመድባል/ይቀይራል።
+  const isSchool = chat.connection.category === "SCHOOL";
+  const staffOptions = isSchool && viewer.isAdmin ? (await listStaffNames()).filter((member) => member.active || member.id === chat.ownerStaffId) : [];
+  const ownerControl =
+    isSchool && (viewer.isAdmin || chat.ownerStaff) ? (
+      <section aria-label={t("Brought by")} className="flex flex-col gap-2">
+        <h2 className="text-xs font-semibold text-muted-foreground">
+          {t("Brought by")}: <span className="text-foreground">{chat.ownerStaff?.name ?? t("Not assigned")}</span>
+          {chat.ownerStaff && !chat.ownerManual ? <span> · {t("found automatically")}</span> : null}
+        </h2>
+        {staffOptions.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {staffOptions.map((member) => (
+              <ActionButton
+                key={member.id}
+                action={setStudentOwnerAction}
+                id={chat.id}
+                fields={{ staff: member.id }}
+                size="sm"
+                variant={chat.ownerStaffId === member.id && chat.ownerManual ? "default" : "outline"}
+                aria-pressed={chat.ownerStaffId === member.id && chat.ownerManual}
+              >
+                {member.name}
+              </ActionButton>
+            ))}
+            {chat.ownerStaffId ? (
+              <ActionButton action={setStudentOwnerAction} id={chat.id} fields={{ staff: "" }} size="sm" variant="ghost">
+                {t("Clear")}
+              </ActionButton>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+    ) : null;
 
   // ሻጭ ወይም ገዢ ያልተገናኘለት ቻናል ካለ፣ በእጅ ለማገናኘት የሚመረጡት ይመጣሉ።
   const candidates = channels.some((channel) => !channel.sellerChat || !channel.buyerChat) ? await getLinkCandidates(chat.id) : undefined;
@@ -238,8 +289,9 @@ export async function ChatView({ chat, backHref, now, viewer }: { chat: ChatData
           ) : null
         }
         panel={
-          (can.aiSummary && (chat.aiEnabled || chat.aiSummary)) || openAlerts.length > 0 || can.channels ? (
+          (can.aiSummary && (chat.aiEnabled || chat.aiSummary)) || openAlerts.length > 0 || can.channels || ownerControl ? (
             <>
+              {ownerControl}
               {openAlerts.map((alert) => (
                 <div key={alert.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-destructive/10 p-3">
                   <div className="flex min-w-0 flex-wrap items-center gap-2">

@@ -476,6 +476,15 @@ enum TelegramAccountCategory {
   SCHOOL
 }
 
+/// የወጪ መልዕክቱን ማን እንደላከ እንዴት እንደታወቀ፦ WEB ከዌብሳይቱ (እርግጠኛ)፣ SIGNATURE በፊርማው፣ CHAT_OWNER ተማሪው በተመደበለት ሰራተኛ፣
+/// SHIFT በስራ ሰዓቱ። ቴሌግራም ከየትኛው ዲቫይስ እንደተላከ ለቦቶች አይነግርም።
+enum TelegramStaffSource {
+  WEB
+  SIGNATURE
+  CHAT_OWNER
+  SHIFT
+}
+
 /// አንድ የድርጅት የቴሌግራም አካውንት ከቦቱ ጋር ያለው ግንኙነት። id የቴሌግራሙ business_connection_id ነው።
 /// category፦ አድሚኑ በሰራተኞች ገጽ ይመርጣል፤ ሰራተኞች የተፈቀደላቸውን ምድብ ቻቶች ብቻ ያያሉ።
 model TelegramConnection {
@@ -519,6 +528,10 @@ model TelegramChat {
   suggestedReply        String?
   suggestedForMessageId String?
   suggestedAt           DateTime?
+  /// ተማሪውን ያመጣው (ኮሚሽኑ የሚቆጠርለት) ሰራተኛ። ownerManual፦ አድሚኑ መርጦታል፤ በራሱ አይቀየርም።
+  ownerStaffId          String?
+  ownerStaff            TelegramStaff?     @relation(fields: [ownerStaffId], references: [id], onDelete: SetNull)
+  ownerManual           Boolean            @default(false)
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 
@@ -532,6 +545,7 @@ model TelegramChat {
   @@unique([connectionId, chatId])
   @@index([lastMessageAt])
   @@index([lastDirection])
+  @@index([ownerStaffId])
   @@map("telegram_chat")
 }
 
@@ -556,6 +570,12 @@ model TelegramMessage {
   sentByName    String?
   /// "ለገዢው ላክ"፦ ከሌላኛው ቻት (ለምሳሌ ከሻጩ) ተወስዶ የተላከበት መልዕክት
   relayedFromId String?
+  /// ይህንን የወጪ መልዕክት የላከው ሰራተኛ እና እንዴት እንደታወቀ (lib/telegram/attribution.ts)
+  staffId       String?
+  staff         TelegramStaff?       @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  staffSource   TelegramStaffSource?
+  /// በአንድ ጊዜ ለብዙ ሰው ከተላከ መልዕክት (ማርኬቲንግ) የተላከ ከሆነ
+  broadcastId   String?
   createdAt     DateTime          @default(now())
 
   alerts    TelegramAlert[]
@@ -564,6 +584,7 @@ model TelegramMessage {
 
   @@unique([chatId, messageId])
   @@index([sentAt])
+  @@index([staffId, sentAt])
   @@map("telegram_message")
 }
 
@@ -595,8 +616,16 @@ model TelegramStaff {
   name        String
   active      Boolean  @default(true)
   permissions Json     @default("{}")
+  /// ከስልክ የሚመልሱትን ለመለየት፦ በመልዕክታቸው የሚጨምሩት ፊርማ (ለምሳሌ "- Afran") እና የስራ ሰዓታቸው
+  /// (ከእኩለ ሌሊት ጀምሮ ያሉ ደቂቃዎች፣ የአዲስ አበባ ሰዓት፤ shiftEnd < shiftStart ማለት እስከ ሌሊቱ ይዘልቃል)።
+  signature   String?
+  shiftStart  Int?
+  shiftEnd    Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  messages TelegramMessage[]
+  students TelegramChat[]
 
   @@map("telegram_staff")
 }
@@ -676,6 +705,23 @@ model TelegramReceipt {
 
   @@index([transactionId])
   @@map("telegram_receipt")
+}
+
+/// ለብዙ ተማሪዎች በአንድ ጊዜ የተላከ የማርኬቲንግ መልዕክት። ቴሌግራም የሚፈቅደው ባለፉት 24 ሰዓታት የጻፉትን ብቻ ነው።
+model TelegramBroadcast {
+  id            String   @id @default(cuid())
+  segment       String
+  text          String
+  sentCount     Int      @default(0)
+  failedCount   Int      @default(0)
+  /// 24 ሰዓቱ ስላለፈ ያልተላከላቸው
+  skippedCount  Int      @default(0)
+  recipientIds  String[] @default([])
+  createdByName String
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("telegram_broadcast")
 }
 
 /// የፎቶው የተጨመቀ ቅጂ (WebP)፤ ፎቶው በቴሌግራም ቢሰረዝም ማስረጃው እንዲቀር መልዕክቱ ሲመጣ ይቀመጣል።
