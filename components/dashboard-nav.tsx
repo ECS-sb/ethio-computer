@@ -8,7 +8,9 @@ import {
   ListIcon,
   MessageCircleIcon,
   ReceiptIcon,
+  MessagesSquareIcon,
   SettingsIcon,
+  SmartphoneIcon,
   ShoppingBagIcon,
   SparklesIcon,
   StoreIcon,
@@ -48,6 +50,13 @@ const groups: Record<"user", Group[]> = {
       ],
     },
     {
+      title: "Electronics",
+      items: [
+        { href: "/dashboard/electronics", label: "My items", icon: SmartphoneIcon },
+        { href: "/dashboard/electronics/deals", label: "Electronics chats", icon: MessagesSquareIcon },
+      ],
+    },
+    {
       title: "Account",
       items: [
         { href: "/dashboard/wallet", label: "Wallet", icon: WalletIcon },
@@ -70,7 +79,7 @@ export function DashboardNav({ area }: { area: keyof typeof groups }) {
         <div key={group.title} className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-stretch">
           <p className="hidden px-4 pt-2 text-xs font-semibold text-muted-foreground lg:block">{t(group.title)}</p>
           {group.items.map((item) => {
-            const hasSubpages = ["/dashboard/messages", "/dashboard/jobs", "/dashboard/talent"].includes(item.href);
+            const hasSubpages = ["/dashboard/messages", "/dashboard/jobs", "/dashboard/talent", "/dashboard/electronics", "/dashboard/electronics/deals"].includes(item.href);
             // ንዑስ ገጹ የራሱ ሊንክ ካለው (ለምሳሌ /dashboard/buyer/orders) የወላጁ ሊንክ አይበራም።
             const ownedByChild = group.items.some(
               (other) => other.href.startsWith(`${item.href}/`) && (pathname === other.href || pathname.startsWith(`${other.href}/`))

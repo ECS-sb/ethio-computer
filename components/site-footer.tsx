@@ -23,7 +23,7 @@ export async function SiteFooter() {
         { href: "/how-it-works", label: t("How it works") },
         { href: "/faq", label: t("FAQ") },
         { href: "/sell", label: t("Sell an account") },
-        { href: "/sellers", label: t("Top sellers") },
+        { href: "/electronics", label: t("Electronics") },
         { href: "/contact", label: t("Contact us") },
       ],
     },

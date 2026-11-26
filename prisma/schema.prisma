@@ -49,6 +49,9 @@ enum WalletEntryType {
   JOB_PAYMENT
   JOB_REFUND
   JOB_EARNING
+  PRODUCT_PAYMENT
+  PRODUCT_REFUND
+  PRODUCT_EARNING
 }
 
 enum OfferStatus {
@@ -103,6 +106,11 @@ model User {
   gigMessages        GigMessage[]
   jobsHired          Job[]               @relation("JobClient")
   jobsWorked         Job[]               @relation("JobFreelancer")
+  products           Product[]
+  productThreads     ProductThread[]     @relation("ProductThreadBuyer")
+  productMessages    ProductMessage[]
+  productsBought     ProductOrder[]      @relation("ProductOrderBuyer")
+  productsSold       ProductOrder[]      @relation("ProductOrderSeller")
 
   @@map("user")
 }
@@ -374,21 +382,23 @@ model Withdrawal {
 
 /// የዋሌቱ እያንዳንዱ እንቅስቃሴ (ገቢ +፣ ወጪ −) እና ከዚያ በኋላ የቀረው ሂሳብ።
 model WalletEntry {
-  id           String          @id @default(cuid())
-  userId       String
-  user         User            @relation(fields: [userId], references: [id], onDelete: Restrict)
-  type         WalletEntryType
-  amountEtb    Int
-  balanceAfter Int
-  orderId      String?
-  order        Order?          @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  depositId    String?
-  deposit      Deposit?        @relation(fields: [depositId], references: [id], onDelete: Restrict)
-  withdrawalId String?
-  withdrawal   Withdrawal?     @relation(fields: [withdrawalId], references: [id], onDelete: Restrict)
-  jobId        String?
-  job          Job?            @relation(fields: [jobId], references: [id], onDelete: Restrict)
-  createdAt    DateTime        @default(now())
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  type           WalletEntryType
+  amountEtb      Int
+  balanceAfter   Int
+  orderId        String?
+  order          Order?          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  depositId      String?
+  deposit        Deposit?        @relation(fields: [depositId], references: [id], onDelete: Restrict)
+  withdrawalId   String?
+  withdrawal     Withdrawal?     @relation(fields: [withdrawalId], references: [id], onDelete: Restrict)
+  jobId          String?
+  job            Job?            @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  productOrderId String?
+  productOrder   ProductOrder?   @relation(fields: [productOrderId], references: [id], onDelete: Restrict)
+  createdAt      DateTime        @default(now())
 
   @@index([userId, createdAt])
   @@map("wallet_entry")
@@ -488,17 +498,17 @@ enum TelegramStaffSource {
 /// አንድ የድርጅት የቴሌግራም አካውንት ከቦቱ ጋር ያለው ግንኙነት። id የቴሌግራሙ business_connection_id ነው።
 /// category፦ አድሚኑ በሰራተኞች ገጽ ይመርጣል፤ ሰራተኞች የተፈቀደላቸውን ምድብ ቻቶች ብቻ ያያሉ።
 model TelegramConnection {
-  id            String   @id
+  id            String                  @id
   category      TelegramAccountCategory @default(SALES)
   ownerId       BigInt
   ownerChatId   BigInt
   ownerName     String
   ownerUsername String?
-  canReply      Boolean  @default(false)
-  isEnabled     Boolean  @default(true)
+  canReply      Boolean                 @default(false)
+  isEnabled     Boolean                 @default(true)
   connectedAt   DateTime
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
 
   chats TelegramChat[]
 
@@ -550,14 +560,14 @@ model TelegramChat {
 }
 
 model TelegramMessage {
-  id            String            @id @default(cuid())
+  id            String               @id @default(cuid())
   chatId        String
-  chat          TelegramChat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chat          TelegramChat         @relation(fields: [chatId], references: [id], onDelete: Cascade)
   messageId     Int
   direction     TelegramDirection
   senderName    String
-  viaBot        Boolean           @default(false)
-  text          String            @default("")
+  viaBot        Boolean              @default(false)
+  text          String               @default("")
   mediaType     String?
   mimeType      String?
   fileId        String?
@@ -576,7 +586,7 @@ model TelegramMessage {
   staffSource   TelegramStaffSource?
   /// በአንድ ጊዜ ለብዙ ሰው ከተላከ መልዕክት (ማርኬቲንግ) የተላከ ከሆነ
   broadcastId   String?
-  createdAt     DateTime          @default(now())
+  createdAt     DateTime             @default(now())
 
   alerts    TelegramAlert[]
   receipt   TelegramReceipt?
@@ -918,28 +928,28 @@ model GigMessage {
 }
 
 model Job {
-  id            String     @id @default(cuid())
+  id            String    @id @default(cuid())
   gigId         String
-  gig           Gig        @relation(fields: [gigId], references: [id], onDelete: Restrict)
+  gig           Gig       @relation(fields: [gigId], references: [id], onDelete: Restrict)
   threadId      String
-  thread        GigThread  @relation(fields: [threadId], references: [id], onDelete: Restrict)
+  thread        GigThread @relation(fields: [threadId], references: [id], onDelete: Restrict)
   clientId      String
-  client        User       @relation("JobClient", fields: [clientId], references: [id], onDelete: Restrict)
+  client        User      @relation("JobClient", fields: [clientId], references: [id], onDelete: Restrict)
   freelancerId  String
-  freelancer    User       @relation("JobFreelancer", fields: [freelancerId], references: [id], onDelete: Restrict)
+  freelancer    User      @relation("JobFreelancer", fields: [freelancerId], references: [id], onDelete: Restrict)
   amountEtb     Int
   brief         String
-  status        JobStatus  @default(REQUESTED)
+  status        JobStatus @default(REQUESTED)
   feePercent    Int
   feeEtb        Int?
   payoutEtb     Int?
   dueAt         DateTime?
   deliveryNote  String?
   deliveredAt   DateTime?
-  revisionCount Int        @default(0)
+  revisionCount Int       @default(0)
   completedAt   DateTime?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   files         JobFile[]
   review        JobReview?
@@ -978,4 +988,147 @@ model JobReview {
 
   @@index([gigId])
   @@map("job_review")
+}
+
+// ---- ኤሌክትሮኒክስ፦ ስልክ፣ ላፕቶፕ ወዘተ መግዛትና መሸጥ (ልክ እንደ አካውንቶቹ፣ ብሩ እስኪረከቡ በድርጅቱ ይያዛል)
+
+enum ProductCategory {
+  PHONE
+  LAPTOP
+  TABLET
+  COMPUTER
+  TV_AUDIO
+  GAMING
+  CAMERA
+  ACCESSORY
+}
+
+enum ProductCondition {
+  NEW
+  LIKE_NEW
+  USED
+}
+
+/// RESERVED፦ ተገዝቶ እስኪረከብ ድረስ ለሌሎች አይታይም። SOLD፦ ገዢው መረከቡን አረጋግጧል።
+enum ProductStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAUSED
+  RESERVED
+  SOLD
+}
+
+/// PAID፦ ብሩ ተይዟል፣ ሻጩ እስኪያስረክብ። HANDED_OVER፦ ሻጩ አስረክቤያለሁ ብሏል፣ ገዢው እስኪያረጋግጥ።
+enum ProductOrderStatus {
+  PAID
+  HANDED_OVER
+  COMPLETED
+  DISPUTED
+  CANCELLED
+  REFUNDED
+}
+
+model Product {
+  id           String           @id @default(cuid())
+  sellerId     String
+  seller       User             @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  category     ProductCategory
+  condition    ProductCondition
+  title        String
+  brand        String           @default("")
+  description  String
+  priceEtb     Int
+  city         String
+  status       ProductStatus    @default(PENDING)
+  rejectReason String?
+  /// የኢትዮ ኮምፒውተር የራሱ እቃ፦ አድሚኑ ሲለጥፈው ወዲያው ይታያል፣ ከሁሉም በላይ፣ ያለ ክፍያ ቅነሳ
+  official     Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  images  ProductImage[]
+  threads ProductThread[]
+  orders  ProductOrder[]
+
+  @@index([status, category])
+  @@index([sellerId])
+  @@map("product")
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  position  Int
+  width     Int
+  height    Int
+  data      Bytes
+  thumb     Bytes
+  createdAt DateTime @default(now())
+
+  @@unique([productId, position])
+  @@map("product_image")
+}
+
+/// በአንድ እቃ ላይ ገዢውና ሻጩ የሚነጋገሩበት ቻት (ከመግዛት በፊትም በኋላም)።
+model ProductThread {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  buyerId   String
+  buyer     User     @relation("ProductThreadBuyer", fields: [buyerId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages ProductMessage[]
+  orders   ProductOrder[]
+
+  @@unique([productId, buyerId])
+  @@index([buyerId])
+  @@map("product_thread")
+}
+
+/// system፦ በሲስተሙ የተጻፈ (body የlib/messages.ts ቁልፍ ነው)።
+model ProductMessage {
+  id        String        @id @default(cuid())
+  threadId  String
+  thread    ProductThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User          @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  body      String
+  system    Boolean       @default(false)
+  createdAt DateTime      @default(now())
+
+  @@index([threadId, createdAt])
+  @@map("product_message")
+}
+
+model ProductOrder {
+  id           String             @id @default(cuid())
+  productId    String
+  product      Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
+  threadId     String
+  thread       ProductThread      @relation(fields: [threadId], references: [id], onDelete: Restrict)
+  buyerId      String
+  buyer        User               @relation("ProductOrderBuyer", fields: [buyerId], references: [id], onDelete: Restrict)
+  sellerId     String
+  seller       User               @relation("ProductOrderSeller", fields: [sellerId], references: [id], onDelete: Restrict)
+  amountEtb    Int
+  feePercent   Int
+  feeEtb       Int?
+  payoutEtb    Int?
+  status       ProductOrderStatus @default(PAID)
+  handedOverAt DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  walletEntries WalletEntry[]
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([threadId])
+  @@map("product_order")
 }

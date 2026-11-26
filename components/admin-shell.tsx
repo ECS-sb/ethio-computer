@@ -22,6 +22,7 @@ import {
   PieChartIcon,
   ReceiptIcon,
   SendIcon,
+  SmartphoneIcon,
   StoreIcon,
   UserCogIcon,
   UserIcon,
@@ -55,6 +56,7 @@ const sections: Section[] = [
       { href: "/admin/orders", label: "Orders", icon: ReceiptIcon },
       { href: "/admin/reports", label: "Reports", icon: FlagIcon },
       { href: "/admin/talent", label: "Talent", icon: BriefcaseIcon },
+      { href: "/admin/electronics", label: "Electronics", icon: SmartphoneIcon },
     ],
   },
   { title: "Money", icon: WalletIcon, items: [{ href: "/admin/wallet", label: "Deposits & withdrawals", icon: WalletIcon }] },
@@ -91,7 +93,7 @@ const sections: Section[] = [
 const allItems = [home, ...sections.flatMap((section) => section.items)];
 
 // ንዑስ ገጾቻቸው (ለምሳሌ /admin/telegram/{id}) ሲከፈቱም የሚበሩ።
-const withSubpages = new Set(["/admin/telegram", SCHOOL_INBOX, "/admin/telegram/channels", "/admin/talent", SCHOOL_ANALYTICS]);
+const withSubpages = new Set(["/admin/telegram", SCHOOL_INBOX, "/admin/telegram/channels", "/admin/talent", "/admin/electronics", SCHOOL_ANALYTICS]);
 
 /** የሽያጩና የትምህርት ቤቱ ቴሌግራም አንድ ገጽ ናቸው (በ?category= ይለያሉ)፤ የራሱ ሊንክ ያለው ንዑስ ገጽ የወላጁን አያበራም። */
 function isActive(item: Item, pathname: string, category: string): boolean {

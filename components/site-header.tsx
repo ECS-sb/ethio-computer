@@ -10,9 +10,9 @@ import {
   LayoutDashboardIcon,
   MenuIcon,
   SearchIcon,
+  SmartphoneIcon,
   StoreIcon,
   TagIcon,
-  UsersIcon,
   type LucideIcon,
 } from "lucide-react";
 import { LocaleLink, useLocale, useT } from "@/components/i18n-provider";
@@ -35,7 +35,7 @@ const links: NavLink[] = [
   { href: "/accounts", label: "Market", icon: StoreIcon },
   { href: "/sell", label: "Sell", icon: TagIcon },
   { href: "/talent", label: "Hire talent", icon: BriefcaseIcon },
-  { href: "/sellers", label: "Sellers", icon: UsersIcon },
+  { href: "/electronics", label: "Electronics", icon: SmartphoneIcon },
   { href: "/services", label: "Services", icon: SparklesIcon },
 ];
 

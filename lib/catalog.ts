@@ -329,4 +329,7 @@ export const walletEntryLabels: Record<WalletEntryType, MessageKey> = {
   JOB_PAYMENT: "Paid for a job",
   JOB_REFUND: "Job refund",
   JOB_EARNING: "Job earning",
+  PRODUCT_PAYMENT: "Bought an item",
+  PRODUCT_REFUND: "Item refund",
+  PRODUCT_EARNING: "Item sale (after fee)",
 };
