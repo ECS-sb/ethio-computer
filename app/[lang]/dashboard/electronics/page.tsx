@@ -36,7 +36,7 @@ export default async function MyProductsPage() {
       </div>
       {products.length === 0 ? (
         <div className="flex flex-col items-center gap-4 rounded-xl bg-card/70 p-12 text-center ring-1 ring-foreground/10">
-          <p className="text-muted-foreground">{t("Have a phone, laptop or other electronics to sell? Post it with a few photos.")}</p>
+          <p className="text-muted-foreground">{t("Have a camera, mic, light or other content creation gear to sell? Post it with a few photos.")}</p>
           <LocaleLink href="/dashboard/electronics/new" className={buttonVariants()}>
             {t("Sell an item")}
           </LocaleLink>

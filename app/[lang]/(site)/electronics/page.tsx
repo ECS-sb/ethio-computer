@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { SearchIcon, ShieldCheckIcon } from "lucide-react";
 import { PageIntro } from "@/components/brand";
 import { ProductCard } from "@/components/electronics/product-card";
+import { PageActions } from "@/components/page-actions";
 import { LocaleLink } from "@/components/i18n-provider";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +48,7 @@ async function CategoryChips({ searchParams }: { searchParams: Params }) {
       <form action="" className="relative max-w-xl">
         <SearchIcon className="pointer-events-none absolute start-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         {active ? <input type="hidden" name="category" value={active} /> : null}
-        <Input name="q" defaultValue={q} placeholder={t("Search phones, laptops, brands…")} aria-label={t("Search")} className="h-11 rounded-full ps-11" />
+        <Input name="q" defaultValue={q} placeholder={t("Search cameras, mics, lights, phones…")} aria-label={t("Search")} className="h-11 rounded-full ps-11" />
       </form>
       <nav aria-label={t("Categories")} className="flex flex-wrap gap-2">
         {chip(`/electronics${q ? `?q=${encodeURIComponent(q)}` : ""}`, t("All"), !active)}
@@ -85,22 +86,19 @@ export default async function ElectronicsPage({ searchParams }: { searchParams: 
   return (
     <>
       <PageIntro
-        eyebrow={t("Phones, laptops, tablets and more")}
+        eyebrow={t("Cameras, lenses, lights, mics, phones and laptops")}
         title={
           <>
-            {t("Buy and sell")} <span className="text-gold">{t("electronics.")}</span>
+            {t("Gear for")} <span className="text-gold">{t("content creators.")}</span>
           </>
         }
-        description={t("Pay safely on Ethio Computer. The seller gets the money only after you receive the item and confirm it.")}
+        description={t("Buy and sell equipment for making videos and content. The seller gets the money only after you receive the item and confirm it.")}
       />
-      <div className="flex flex-wrap gap-2">
-        <a href="#items" className={buttonVariants({ size: "lg" })}>
-          {t("Browse items")}
-        </a>
-        <LocaleLink href="/dashboard/electronics/new" className={buttonVariants({ size: "lg", variant: "outline" })}>
-          {t("Sell an item")}
-        </LocaleLink>
-      </div>
+      <PageActions
+        primary={{ label: t("Buy gear"), href: "#items" }}
+        secondary={{ label: t("Sell your gear"), href: "/dashboard/electronics/new" }}
+        guide="electronics"
+      />
 
       <ol className="grid gap-6 pt-6 sm:grid-cols-2 lg:grid-cols-4">
         {electronicsSteps.map((step, index) => (

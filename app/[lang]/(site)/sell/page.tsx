@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { PageIntro } from "@/components/brand";
 import { LocaleLink } from "@/components/i18n-provider";
+import { PageActions } from "@/components/page-actions";
 import { SellWizard } from "@/components/sell-wizard";
 import { VerifyPromo } from "@/components/verify-promo";
 import { buttonVariants } from "@/components/ui/button";
@@ -46,10 +47,15 @@ export default async function SellPage() {
         }
         description={t("Before listing, check that the platform's rules allow transferring accounts.")}
       />
+      <PageActions
+        primary={{ label: t("Sell your account"), href: "#sell-form" }}
+        secondary={{ label: t("Buy an account"), href: "/accounts" }}
+        guide="accounts"
+      />
       <Suspense fallback={null}>
         <VerifyPromo />
       </Suspense>
-      <div className="grid items-start gap-6 lg:grid-cols-[1fr_20rem]">
+      <div id="sell-form" className="grid scroll-mt-24 items-start gap-6 lg:grid-cols-[1fr_20rem]">
         <Suspense fallback={<Skeleton className="h-96 rounded-xl" />}>
           <SellGate />
         </Suspense>

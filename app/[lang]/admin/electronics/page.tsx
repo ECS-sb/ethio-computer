@@ -78,7 +78,7 @@ export default async function AdminElectronicsPage() {
                     </a>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground">{t("Check that the photos show a real item and no phone numbers or other contacts, and that the price is realistic.")}</p>
+                <p className="text-xs text-muted-foreground">{t("Check that it is gear for content creation, the photos show a real item with no phone numbers or other contacts, and the price is realistic.")}</p>
                 <ReviewForm action={reviewProductAction} id={product.id} approveLabel={t("Approve")} />
               </article>
             ))

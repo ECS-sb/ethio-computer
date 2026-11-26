@@ -4,12 +4,13 @@ import { AccountsFilters } from "@/components/accounts-filters";
 import { PageIntro } from "@/components/brand";
 import { LocaleLink } from "@/components/i18n-provider";
 import { ListingCard } from "@/components/listing-card";
+import { PageActions } from "@/components/page-actions";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getT, pageTitle } from "@/lib/i18n-server";
 import { searchListings } from "@/lib/queries";
 
-export const generateMetadata = pageTitle("Market");
+export const generateMetadata = pageTitle("Social media accounts");
 
 type Params = Promise<Record<string, string | string[] | undefined>>;
 
@@ -100,7 +101,7 @@ export default async function AccountsPage({ searchParams }: { searchParams: Par
   return (
     <>
       <PageIntro
-        eyebrow={t("Market")}
+        eyebrow={t("Social media accounts")}
         title={
           <>
             {t("Find the")} <span className="text-gold">{t("account")}</span> {t("you're looking for.")}
@@ -108,13 +109,20 @@ export default async function AccountsPage({ searchParams }: { searchParams: Par
         }
         description={t("Filter by platform, category, followers and price.")}
       />
-      <Suspense fallback={<ResultsSkeleton />}>
-        <AccountsFilters>
-          <Suspense fallback={<ResultsSkeleton />}>
-            <Results searchParams={searchParams} />
-          </Suspense>
-        </AccountsFilters>
-      </Suspense>
+      <PageActions
+        primary={{ label: t("Buy an account"), href: "#listings" }}
+        secondary={{ label: t("Sell your account"), href: "/sell" }}
+        guide="accounts"
+      />
+      <section id="listings" className="flex scroll-mt-24 flex-col gap-6">
+        <Suspense fallback={<ResultsSkeleton />}>
+          <AccountsFilters>
+            <Suspense fallback={<ResultsSkeleton />}>
+              <Results searchParams={searchParams} />
+            </Suspense>
+          </AccountsFilters>
+        </Suspense>
+      </section>
     </>
   );
 }

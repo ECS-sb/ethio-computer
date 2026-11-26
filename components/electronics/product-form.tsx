@@ -55,11 +55,11 @@ export function ProductForm({ official = false }: { official?: boolean }) {
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="product-title">{t("Title")}</Label>
-        <Input id="product-title" name="title" required minLength={5} maxLength={90} placeholder={t("For example: iPhone 13 Pro, 256GB, blue")} />
+        <Input id="product-title" name="title" required minLength={5} maxLength={90} placeholder={t("For example: Sony ZV-E10 with 16-50mm lens")} />
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="product-brand">{t("Brand (optional)")}</Label>
-        <Input id="product-brand" name="brand" maxLength={40} placeholder="Apple, Samsung, HP…" />
+        <Input id="product-brand" name="brand" maxLength={40} placeholder="Sony, Canon, Rode, Godox, Apple…" />
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="product-description">{t("Description")}</Label>
@@ -70,7 +70,7 @@ export function ProductForm({ official = false }: { official?: boolean }) {
           minLength={20}
           maxLength={3000}
           rows={6}
-          placeholder={t("Storage, RAM, battery health, any scratches or repairs, what comes in the box, and why you're selling.")}
+          placeholder={t("Model, specs, shutter count or battery health, any scratches or repairs, what comes in the box, and why you're selling.")}
         />
         <p className="text-xs text-muted-foreground">{t("Don't add phone numbers, usernames or links here. Buyers contact you through the site chat.")}</p>
       </div>
@@ -86,6 +86,7 @@ export function ProductForm({ official = false }: { official?: boolean }) {
         </div>
       </div>
       <div className="flex flex-col gap-2 border-t border-border pt-6">
+        <p className="text-xs text-muted-foreground">{t("Only gear for making content: cameras, lenses, lights, mics, sound cards, tripods, phones and computers. Other items are rejected.")}</p>
         <p className="font-semibold">{t("Photos")}</p>
         <p className="text-sm text-muted-foreground">{t("Add 1 to 4 clear photos of the real item: front, back, and any damage.")}</p>
         <ScreenshotPicker files={photos} onChange={setPhotos} />

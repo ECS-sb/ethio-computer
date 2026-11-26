@@ -2,15 +2,19 @@
 import type { ProductCategory, ProductCondition, ProductOrderStatus, ProductStatus } from "@/lib/generated/prisma/enums";
 import type { MessageKey } from "@/lib/messages";
 
+/** ለኮንተንት ክሬሽን የሚጠቅሙ እቃዎች ብቻ፤ ከነዚህ ውጭ ያለው "ሌሎች" ነው። */
 export const productCategories: { value: ProductCategory; label: MessageKey; mark: string }[] = [
+  { value: "CAMERA", label: "Cameras", mark: "CM" },
+  { value: "LENS", label: "Lenses", mark: "LN" },
+  { value: "LIGHTING", label: "Lighting", mark: "LT" },
+  { value: "MICROPHONE", label: "Microphones", mark: "MC" },
+  { value: "AUDIO_INTERFACE", label: "Sound cards and mixers", mark: "SC" },
+  { value: "TRIPOD_GIMBAL", label: "Tripods and gimbals", mark: "TR" },
   { value: "PHONE", label: "Phones", mark: "PH" },
   { value: "LAPTOP", label: "Laptops", mark: "LP" },
-  { value: "TABLET", label: "Tablets", mark: "TB" },
   { value: "COMPUTER", label: "Desktop computers", mark: "PC" },
-  { value: "TV_AUDIO", label: "TV and audio", mark: "TV" },
-  { value: "GAMING", label: "Gaming", mark: "GM" },
-  { value: "CAMERA", label: "Cameras", mark: "CM" },
-  { value: "ACCESSORY", label: "Accessories", mark: "AC" },
+  { value: "TABLET", label: "Tablets", mark: "TB" },
+  { value: "OTHER", label: "Others", mark: "OT" },
 ];
 
 export function productCategory(value: string) {

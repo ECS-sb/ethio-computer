@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { ShieldCheckIcon } from "lucide-react";
 import { PageIntro } from "@/components/brand";
 import { LocaleLink } from "@/components/i18n-provider";
+import { PageActions } from "@/components/page-actions";
 import { GigCard } from "@/components/talent/gig-card";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -83,14 +84,11 @@ export default async function TalentPage({ searchParams }: { searchParams: Param
         }
         description={t("See their portfolio, chat on the site, and pay safely. The pro gets paid only when you approve the work.")}
       />
-      <div className="flex flex-wrap gap-2">
-        <a href="#pros" className={buttonVariants({ size: "lg" })}>
-          {t("Find a pro")}
-        </a>
-        <LocaleLink href="/dashboard/talent/new" className={buttonVariants({ size: "lg", variant: "outline" })}>
-          {t("Offer your skills")}
-        </LocaleLink>
-      </div>
+      <PageActions
+        primary={{ label: t("Find a pro"), href: "#pros" }}
+        secondary={{ label: t("Offer your skills"), href: "/dashboard/talent/new" }}
+        guide="talent"
+      />
 
       <ol className="grid gap-6 pt-6 sm:grid-cols-2 lg:grid-cols-4">
         {talentSteps.map((step, index) => (

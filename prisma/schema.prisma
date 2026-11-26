@@ -992,15 +992,19 @@ model JobReview {
 
 // ---- ኤሌክትሮኒክስ፦ ስልክ፣ ላፕቶፕ ወዘተ መግዛትና መሸጥ (ልክ እንደ አካውንቶቹ፣ ብሩ እስኪረከቡ በድርጅቱ ይያዛል)
 
+/// ለኮንተንት ክሬሽን የሚጠቅሙ እቃዎች ብቻ፤ ከነዚህ ውጭ ያሉት OTHER ("ሌሎች")።
 enum ProductCategory {
+  CAMERA
+  LENS
+  LIGHTING
+  MICROPHONE
+  AUDIO_INTERFACE
+  TRIPOD_GIMBAL
   PHONE
   LAPTOP
-  TABLET
   COMPUTER
-  TV_AUDIO
-  GAMING
-  CAMERA
-  ACCESSORY
+  TABLET
+  OTHER
 }
 
 enum ProductCondition {

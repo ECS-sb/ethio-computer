@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { PageIntro } from "@/components/brand";
+import { PageActions } from "@/components/page-actions";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { buttonVariants } from "@/components/ui/button";
 import { contact, faqs, services, type ServiceId } from "@/lib/catalog";
@@ -42,6 +43,11 @@ export default async function ServicesPage() {
         }
         description={t("Besides buying and selling accounts, we help you grow, fix and get paid from your channels. Message us on Telegram to order.")}
       />
+      <PageActions
+        primary={{ label: t("Order on Telegram"), href: contact.telegramUserUrl, external: true }}
+        secondary={{ label: t("Call {phone}", { phone: contact.phone }), href: contact.phoneUrl }}
+        guide="services"
+      />
       <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {services.map((service) => {
           const Icon = icons[service.id];
@@ -59,14 +65,6 @@ export default async function ServicesPage() {
           );
         })}
       </ul>
-      <div className="flex flex-wrap gap-2">
-        <a href={contact.telegramUserUrl} target="_blank" rel="noreferrer" className={buttonVariants({ size: "lg" })}>
-          {t("Order on Telegram")}
-        </a>
-        <a href={contact.phoneUrl} className={buttonVariants({ size: "lg", variant: "outline" })}>
-          {t("Call {phone}", { phone: contact.phone })}
-        </a>
-      </div>
 
       <section className="flex flex-col gap-6 pt-12">
         <h2 className="text-3xl font-semibold">

@@ -12,7 +12,6 @@ import {
   SearchIcon,
   SmartphoneIcon,
   StoreIcon,
-  TagIcon,
   type LucideIcon,
 } from "lucide-react";
 import { LocaleLink, useLocale, useT } from "@/components/i18n-provider";
@@ -32,8 +31,7 @@ import { cn } from "@/lib/utils";
 type NavLink = { href: string; label: MessageKey; icon: LucideIcon };
 
 const links: NavLink[] = [
-  { href: "/accounts", label: "Market", icon: StoreIcon },
-  { href: "/sell", label: "Sell", icon: TagIcon },
+  { href: "/accounts", label: "Social media accounts", icon: StoreIcon },
   { href: "/talent", label: "Hire talent", icon: BriefcaseIcon },
   { href: "/electronics", label: "Electronics", icon: SmartphoneIcon },
   { href: "/services", label: "Services", icon: SparklesIcon },
