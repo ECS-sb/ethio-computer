@@ -63,7 +63,10 @@ const gigSchema = z.object({
 });
 
 export async function createGigAction(data: FormData): Promise<ActionResult> {
-  const user = await actor("/dashboard/talent/new");
+  const current = await requireUser("/dashboard/talent/new");
+  const user: Actor = { id: current.id, isAdmin: false };
+  // አድሚኑ የሚለጥፈው የኢትዮ ኮምፒውተር የራሱ አገልግሎት ነው።
+  const official = current.isAdmin;
   const parsed = gigSchema.safeParse(Object.fromEntries(data));
   if (!parsed.success) return INVALID;
   const links = String(field(data, "portfolioLinks") ?? "")
@@ -80,7 +83,7 @@ export async function createGigAction(data: FormData): Promise<ActionResult> {
   }
   if (audios.some((file) => !AUDIO_TYPES.includes(file.type))) return { ok: false, message: "Voice samples must be MP3, M4A, WAV or OGG files." };
 
-  return run("Your service was sent for review.", async () => {
+  return run(official ? "Your service is live." : "Your service was sent for review.", async () => {
     const imageSamples = await Promise.all(
       images.map(async (file) => ({ kind: "image" as const, mimeType: "image/webp", ...(await optimizeScreenshot(file)) }))
     );
@@ -91,7 +94,8 @@ export async function createGigAction(data: FormData): Promise<ActionResult> {
     const created = await talent.createGig(
       user,
       { ...rest, category: category as talent.GigInput["category"], portfolioLinks: links },
-      [...imageSamples, ...audioSamples]
+      [...imageSamples, ...audioSamples],
+      official
     );
     return { id: created.id };
   });

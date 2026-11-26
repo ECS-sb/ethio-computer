@@ -42,6 +42,7 @@ export default async function MyGigsPage() {
                 <Badge variant={gig.status === "APPROVED" ? "default" : gig.status === "REJECTED" ? "destructive" : "secondary"}>
                   {t(gigStatusLabels[gig.status])}
                 </Badge>
+                {gig.official ? <Badge variant="outline">{t("Official")}</Badge> : null}
                 <Badge variant="outline">{t(gigCategory(gig.category)?.label ?? "Other")}</Badge>
               </div>
               <h2 className="font-semibold">{gig.title}</h2>

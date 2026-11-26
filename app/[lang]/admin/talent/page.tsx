@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { ExternalLinkIcon } from "lucide-react";
+import { ExternalLinkIcon, PlusIcon } from "lucide-react";
 import { ActionButton } from "@/components/action-form";
 import { LocaleLink } from "@/components/i18n-provider";
 import { ReviewForm } from "@/components/review-form";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDate, formatPrice } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
+import { getCurrentUser } from "@/lib/session";
 import { resolveJobAction, reviewGigAction } from "@/lib/talent-actions";
 import { gigCategory, jobStatusLabels } from "@/lib/talent-catalog";
 import { getAdminJobs, getPendingGigs } from "@/lib/talent-queries";
@@ -17,11 +18,24 @@ export const generateMetadata = pageTitle("Talent");
 export default async function AdminTalentPage() {
   const t = await getT();
   const { can } = await requireStaff("/admin/talent", "listings", "ordersDecide");
-  const [gigs, jobs] = await Promise.all([can.listings ? getPendingGigs() : [], can.ordersDecide ? getAdminJobs() : []]);
+  const [gigs, jobs, user] = await Promise.all([can.listings ? getPendingGigs() : [], can.ordersDecide ? getAdminJobs() : [], getCurrentUser()]);
 
   return (
     <>
-      <h1 className="text-3xl font-semibold">{t("Talent")}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-3xl font-semibold">{t("Talent")}</h1>
+        {user?.isAdmin ? (
+          <div className="flex flex-wrap gap-2">
+            <LocaleLink href="/dashboard/talent" className={buttonVariants({ variant: "outline" })}>
+              {t("Our services")}
+            </LocaleLink>
+            <LocaleLink href="/dashboard/talent/new" className={buttonVariants()}>
+              <PlusIcon data-icon="inline-start" />
+              {t("Post an Ethio Computer service")}
+            </LocaleLink>
+          </div>
+        ) : null}
+      </div>
 
       {can.listings ? (
         <section className="flex flex-col gap-4">

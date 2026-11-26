@@ -1520,6 +1520,22 @@ export const am = {
     "ሰላም {name}፣ ከእኛ ጋር ስለተማሩ እናመሰግናለን! ስለ ኢትዮ ኮምፒውተር ትምህርት ቤት ለጓደኛዎ ይንገሩ። ከተመዘገቡ ማን እንደላካቸው ያሳውቁን።",
   "Hi {name}, we haven't heard from you in a while. Classes are starting again. Reply here if you'd like to join this time.":
     "ሰላም {name}፣ ከተገናኘን ቆየን። ክፍሎች እንደገና እየጀመሩ ነው። በዚህ ዙር መቀላቀል ከፈለጉ እዚህ ይመልሱልን።",
+  // ---- የኢትዮ ኮምፒውተር የራሱ አገልግሎቶች
+  Official: "ኦፊሴላዊ",
+  "Your service is live.": "አገልግሎትዎ ተለጥፏል።",
+  "Publish now": "አሁኑኑ ለጥፍ",
+  "New Ethio Computer service": "አዲስ የኢትዮ ኮምፒውተር አገልግሎት",
+  "It goes live right away under the name Ethio Computer with an Official badge, above the other pros. Jobs come to your account and nothing is deducted.":
+    "ወዲያውኑ በ\"Ethio Computer\" ስም፣ \"ኦፊሴላዊ\" ምልክት ይዞ ከሌሎቹ ባለሙያዎች በላይ ይታያል። ስራዎቹ ወደ እርስዎ አካውንት ይመጣሉ፤ ምንም ክፍያ አይቆረጥም።",
+  "This is an Ethio Computer service. The full amount goes to your wallet when the client approves.":
+    "ይህ የኢትዮ ኮምፒውተር አገልግሎት ነው። ደንበኛው ሲያጸድቅ ሙሉ ብሩ ወደ ዋሌትዎ ይገባል።",
+  "Our services": "የእኛ አገልግሎቶች",
+  "Post an Ethio Computer service": "የኢትዮ ኮምፒውተር አገልግሎት ለጥፍ",
+  // ---- የአድሚን ምናሌ ምድቦች
+  "Admin portal": "የአድሚን ገጽ",
+  Money: "ገንዘብ",
+  People: "ሰዎች",
+  School: "ትምህርት ቤት",
 } as const;
 
 export type MessageKey = keyof typeof am;

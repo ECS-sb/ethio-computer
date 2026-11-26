@@ -851,6 +851,8 @@ model Gig {
   portfolioLinks String[]    @default([])
   status         GigStatus   @default(PENDING)
   rejectReason   String?
+  /// የኢትዮ ኮምፒውተር የራሱ አገልግሎት፦ አድሚኑ ሲለጥፈው ወዲያው ይታያል፣ በ"Ethio Computer" ስም፣ ከሁሉም በላይ፣ ያለ ክፍያ ቅነሳ
+  official       Boolean     @default(false)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -860,6 +862,7 @@ model Gig {
 
   @@index([status, category])
   @@index([freelancerId])
+  @@index([official])
   @@map("gig")
 }
 

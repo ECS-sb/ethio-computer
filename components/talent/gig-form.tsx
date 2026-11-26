@@ -11,7 +11,8 @@ import { createGigAction } from "@/lib/talent-actions";
 import { AUDIO_TYPES, gigCategories, MAX_GIG_AUDIO, MAX_GIG_IMAGES, MAX_PORTFOLIO_LINKS, TALENT_FEE_PERCENT } from "@/lib/talent-catalog";
 
 /** አዲስ አገልግሎት፦ ምድብ፣ ርዕስ፣ መግለጫ፣ ዋጋ፣ የማስረከቢያ ቀናት እና ፖርትፎሊዮ (ምስል፣ ድምፅ፣ ሊንክ)። አድሚኑ ካጸደቀው በኋላ ይታያል። */
-export function GigForm() {
+/** official፦ አድሚኑ የኢትዮ ኮምፒውተርን አገልግሎት ሲለጥፍ (ግምገማና ክፍያ የለም)። */
+export function GigForm({ official = false }: { official?: boolean }) {
   const t = useT();
   return (
     <RedirectForm action={createGigAction} to="/talent/{id}" className="flex flex-col gap-6 rounded-xl bg-card/70 p-6 ring-1 ring-foreground/10">
@@ -40,7 +41,7 @@ export function GigForm() {
         <div className="flex flex-col gap-2">
           <Label htmlFor="gig-price">{t("Starting price (ETB)")}</Label>
           <Input id="gig-price" name="priceEtb" type="number" inputMode="numeric" required min={100} max={1_000_000} />
-          <p className="text-xs text-muted-foreground">{t("Ethio Computer keeps {percent}% when a job is completed.", { percent: TALENT_FEE_PERCENT })}</p>
+          {official ? null : <p className="text-xs text-muted-foreground">{t("Ethio Computer keeps {percent}% when a job is completed.", { percent: TALENT_FEE_PERCENT })}</p>}
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="gig-days">{t("Delivery time (days)")}</Label>
@@ -66,7 +67,7 @@ export function GigForm() {
         </div>
       </fieldset>
       <SubmitButton size="lg" className="w-fit">
-        {t("Send for review")}
+        {official ? t("Publish now") : t("Send for review")}
       </SubmitButton>
     </RedirectForm>
   );

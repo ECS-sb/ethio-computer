@@ -33,6 +33,7 @@ export async function GigCard({ gig }: { gig: GigCardData }) {
         </div>
       )}
       <div className="flex flex-wrap items-center gap-2">
+        {gig.official ? <Badge>{t("Official")}</Badge> : null}
         <Badge variant="outline">{t(category?.label ?? "Other")}</Badge>
         {gig.hasAudio ? (
           <Badge variant="secondary">

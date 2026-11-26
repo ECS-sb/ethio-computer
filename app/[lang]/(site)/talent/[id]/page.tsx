@@ -38,6 +38,7 @@ async function GigContent({ params }: Props) {
       <div className="flex min-w-0 flex-col gap-6">
         <header className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
+            {gig.official ? <Badge>{t("Official")}</Badge> : null}
             <Badge variant="outline">{t(category?.label ?? "Other")}</Badge>
             {gig.status !== "APPROVED" ? <Badge variant="secondary">{t(gigStatusLabels[gig.status])}</Badge> : null}
           </div>
@@ -133,7 +134,11 @@ async function GigContent({ params }: Props) {
         {isOwner ? (
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
             <p>{t("This is your service. Clients see this page.")}</p>
-            <p>{t("Ethio Computer keeps {percent}% of each job; you get the rest when the client approves.", { percent: TALENT_FEE_PERCENT })}</p>
+            <p>
+              {gig.official
+                ? t("This is an Ethio Computer service. The full amount goes to your wallet when the client approves.")
+                : t("Ethio Computer keeps {percent}% of each job; you get the rest when the client approves.", { percent: TALENT_FEE_PERCENT })}
+            </p>
             <LocaleLink href="/dashboard/talent" className={buttonVariants({ variant: "outline" })}>
               {t("My services")}
             </LocaleLink>

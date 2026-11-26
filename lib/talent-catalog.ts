@@ -30,6 +30,9 @@ export const jobStatusLabels: Record<JobStatus, MessageKey> = {
   REFUNDED: "Refunded",
 };
 
+/** የድርጅቱ የራሱ አገልግሎቶች የሚታዩበት ስም (የብራንድ ስም ስለሆነ አይተረጎምም)። */
+export const OFFICIAL_SELLER_NAME = "Ethio Computer";
+
 /** ደረጃዎቹ በገጹ ላይ በቅደም ተከተል ይታያሉ (የተሰረዙት እዚህ የሉም)። */
 export const jobStages: JobStatus[] = ["REQUESTED", "IN_PROGRESS", "DELIVERED", "COMPLETED"];
 

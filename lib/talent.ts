@@ -48,7 +48,8 @@ export type GigSampleInput = {
   height?: number;
 };
 
-export async function createGig(actor: Actor, input: GigInput, samples: GigSampleInput[]) {
+/** official፦ የኢትዮ ኮምፒውተር የራሱ አገልግሎት (አድሚኑ ብቻ)፤ ግምገማ ሳይጠብቅ ወዲያው ይታያል። */
+export async function createGig(actor: Actor, input: GigInput, samples: GigSampleInput[], official = false) {
   assertPublicText(input.title, input.description);
   const links = [...new Set(input.portfolioLinks.map((link) => link.trim()).filter(Boolean))];
   if (links.length > MAX_PORTFOLIO_LINKS || links.some((link) => !isAllowedLink(link, PORTFOLIO_LINK_HOSTS))) {
@@ -56,12 +57,14 @@ export async function createGig(actor: Actor, input: GigInput, samples: GigSampl
   }
   if (samples.length === 0 && links.length === 0) throw new DomainError("Add at least one portfolio sample.");
   const active = await db.gig.count({ where: { freelancerId: actor.id, status: { in: ["PENDING", "APPROVED", "PAUSED"] } } });
-  if (active >= 10) throw new DomainError("You can have up to 10 services.");
+  if (active >= (official ? 50 : 10)) throw new DomainError("You can have up to 10 services.");
   return db.gig.create({
     data: {
       ...input,
       portfolioLinks: links,
       freelancerId: actor.id,
+      official,
+      status: official ? "APPROVED" : "PENDING",
       samples: { create: samples.map((sample, position) => ({ ...sample, position })) },
     },
     select: { id: true },
@@ -132,7 +135,7 @@ function systemNote(tx: Tx, threadId: string, senderId: string, key: MessageKey)
 export async function hireGig(actor: Actor, gigId: string, amountEtb: number, brief: string) {
   const gig = await db.gig.findUnique({
     where: { id: gigId },
-    select: { freelancerId: true, status: true, priceEtb: true, freelancer: { select: { suspended: true } } },
+    select: { freelancerId: true, status: true, priceEtb: true, official: true, freelancer: { select: { suspended: true } } },
   });
   if (!gig || gig.status !== "APPROVED" || gig.freelancer.suspended) throw new DomainError("This service isn't available right now.");
   if (gig.freelancerId === actor.id) throw new DomainError("This is your own service.");
@@ -149,7 +152,8 @@ export async function hireGig(actor: Actor, gigId: string, amountEtb: number, br
         freelancerId: gig.freelancerId,
         amountEtb,
         brief,
-        feePercent: TALENT_FEE_PERCENT,
+        // የራሳችን አገልግሎት ብሩ ሙሉ በሙሉ የድርጅቱ ስለሆነ ክፍያ አይቆረጥም።
+        feePercent: gig.official ? 0 : TALENT_FEE_PERCENT,
       },
       select: { id: true },
     });

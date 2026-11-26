@@ -3,6 +3,12 @@ import { db } from "@/lib/db";
 import type { GigCategory } from "@/lib/generated/prisma/client";
 import { publicSellerName } from "@/lib/queries";
 import type { CurrentUser } from "@/lib/session";
+import { OFFICIAL_SELLER_NAME } from "@/lib/talent-catalog";
+
+/** የኢትዮ ኮምፒውተር አገልግሎት በድርጅቱ ስም ይታያል፤ የሌሎች በአጭር ስማቸው። */
+function sellerName(official: boolean, name: string) {
+  return official ? OFFICIAL_SELLER_NAME : publicSellerName(name);
+}
 
 /** የአገልግሎቶቹ አማካይ ደረጃ እና የአስተያየቶች ብዛት። */
 async function ratingsFor(gigIds: string[]) {
@@ -24,6 +30,7 @@ const cardSelect = {
   priceEtb: true,
   deliveryDays: true,
   freelancerId: true,
+  official: true,
   freelancer: { select: { name: true, verifiedSeller: true } },
   samples: { orderBy: { position: "asc" }, select: { id: true, kind: true, width: true, height: true } },
 } as const;
@@ -31,7 +38,7 @@ const cardSelect = {
 export async function getPublicGigs(category?: GigCategory) {
   const rows = await db.gig.findMany({
     where: { status: "APPROVED", freelancer: { suspended: false }, ...(category ? { category } : {}) },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ official: "desc" }, { createdAt: "desc" }],
     take: 60,
     select: cardSelect,
   });
@@ -42,8 +49,9 @@ export async function getPublicGigs(category?: GigCategory) {
     title: row.title,
     priceEtb: row.priceEtb,
     deliveryDays: row.deliveryDays,
-    freelancerName: publicSellerName(row.freelancer.name),
-    verified: row.freelancer.verifiedSeller,
+    freelancerName: sellerName(row.official, row.freelancer.name),
+    official: row.official,
+    verified: row.official || row.freelancer.verifiedSeller,
     cover: row.samples.find((sample) => sample.kind === "image") ?? null,
     hasAudio: row.samples.some((sample) => sample.kind === "audio"),
     rating: ratings.get(row.id) ?? null,
@@ -96,8 +104,9 @@ export async function getGigForViewer(id: string, viewer: CurrentUser | null) {
       rejectReason: gig.rejectReason,
       images: gig.samples.filter((sample) => sample.kind === "image").map((sample) => ({ id: sample.id, width: sample.width ?? 800, height: sample.height ?? 600 })),
       audios: gig.samples.filter((sample) => sample.kind === "audio").map((sample) => ({ id: sample.id })),
-      freelancerName: publicSellerName(gig.freelancer.name),
-      verified: gig.freelancer.verifiedSeller,
+      freelancerName: sellerName(gig.official, gig.freelancer.name),
+      official: gig.official,
+      verified: gig.official || gig.freelancer.verifiedSeller,
       memberSince: gig.freelancer.createdAt,
     },
     isOwner,
@@ -135,7 +144,7 @@ export async function getMyThreads(userId: string) {
       clientId: true,
       updatedAt: true,
       client: { select: { name: true } },
-      gig: { select: { title: true, category: true, freelancerId: true, freelancer: { select: { name: true } } } },
+      gig: { select: { title: true, category: true, freelancerId: true, official: true, freelancer: { select: { name: true } } } },
       messages: { orderBy: { createdAt: "desc" }, take: 1, select: { body: true, system: true } },
       jobs: { orderBy: { createdAt: "desc" }, take: 1, select: { status: true, amountEtb: true } },
     },
@@ -147,7 +156,7 @@ export async function getMyThreads(userId: string) {
       asClient,
       title: row.gig.title,
       category: row.gig.category,
-      otherName: publicSellerName(asClient ? row.gig.freelancer.name : row.client.name),
+      otherName: asClient ? sellerName(row.gig.official, row.gig.freelancer.name) : publicSellerName(row.client.name),
       lastMessage: row.messages[0] ?? null,
       job: row.jobs[0] ?? null,
       updatedAt: row.updatedAt,
@@ -162,7 +171,7 @@ export async function getThread(id: string, userId: string) {
       id: true,
       clientId: true,
       client: { select: { name: true } },
-      gig: { select: { id: true, title: true, category: true, priceEtb: true, deliveryDays: true, status: true, freelancerId: true, freelancer: { select: { name: true } } } },
+      gig: { select: { id: true, title: true, category: true, priceEtb: true, deliveryDays: true, status: true, freelancerId: true, official: true, freelancer: { select: { name: true } } } },
       messages: { orderBy: { createdAt: "asc" }, take: 300, select: { id: true, senderId: true, body: true, system: true, createdAt: true } },
       jobs: {
         orderBy: { createdAt: "desc" },
@@ -190,7 +199,7 @@ export async function getThread(id: string, userId: string) {
     id: row.id,
     asClient,
     gig: row.gig,
-    otherName: publicSellerName(asClient ? row.gig.freelancer.name : row.client.name),
+    otherName: asClient ? sellerName(row.gig.official, row.gig.freelancer.name) : publicSellerName(row.client.name),
     messages: row.messages,
     jobs: row.jobs,
   };
