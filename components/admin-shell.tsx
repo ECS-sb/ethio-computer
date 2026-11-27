@@ -59,6 +59,7 @@ const sections: Section[] = [
       { href: "/admin/talent", label: "Talent", icon: BriefcaseIcon },
       { href: "/admin/electronics", label: "Electronics", icon: SmartphoneIcon },
       { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCardIcon },
+      { href: "/admin/banners", label: "Banners", icon: MegaphoneIcon },
     ],
   },
   { title: "Money", icon: WalletIcon, items: [{ href: "/admin/wallet", label: "Deposits & withdrawals", icon: WalletIcon }] },

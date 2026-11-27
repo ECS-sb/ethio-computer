@@ -32,9 +32,13 @@ async function ServiceContent({ params }: Props) {
     <div className="grid items-start gap-6 lg:grid-cols-[1fr_26rem]">
       <div className="flex min-w-0 flex-col gap-6">
         <header className="flex items-center gap-4">
-          <ServiceLogo name={service.name} className="size-16" />
+          <ServiceLogo name={service.name} logoUrl={service.logoUrl} className="size-16" />
           <div className="flex flex-col gap-2">
-            {category ? <Badge variant="outline">{t(category.label)}</Badge> : null}
+            <span className="flex flex-wrap gap-2">
+              {category ? <Badge variant="outline">{t(category.label)}</Badge> : null}
+              {service.onSale ? <Badge variant="destructive">{t("Discount")}</Badge> : null}
+              <Badge variant={service.instant ? "default" : "secondary"}>{service.instant ? t("Instant: code right after paying") : t("Activated by our team within hours")}</Badge>
+            </span>
             <h1 className="text-3xl font-semibold text-balance">{service.name}</h1>
           </div>
         </header>

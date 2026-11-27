@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { ArrowRightIcon } from "lucide-react";
 import { Eyebrow } from "@/components/brand";
+import { HomeBanners } from "@/components/home-banners";
 import { LocaleLink } from "@/components/i18n-provider";
 import { ListingCard } from "@/components/listing-card";
 import { MarketBrowser } from "@/components/market-browser";
@@ -97,6 +98,9 @@ export default async function HomePage() {
   const t = await getT();
   return (
     <>
+      <Suspense fallback={null}>
+        <HomeBanners />
+      </Suspense>
       <Hero t={t} />
 
       <section id="market" className="flex scroll-mt-28 flex-col gap-12 pt-24">

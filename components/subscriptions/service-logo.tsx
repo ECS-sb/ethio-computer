@@ -30,12 +30,14 @@ import {
   siZoom,
   type SimpleIcon,
 } from "simple-icons";
+import Image from "next/image";
+import { legacyLogos } from "@/lib/legacy-logos";
 import { serviceMark } from "@/lib/subscription-catalog";
 import { cn } from "@/lib/utils";
 
 /**
- * የአገልግሎቱ ሎጎ፦ simple-icons (CC0) ያለው ሎጎ በብራንድ ቀለሙ፤ ሎጎው የሌለው (ባለቤቶቹ ስላስወጡት) በብራንድ ቀለሙ ላይ የስሙ ፊደላት።
- * በአድሚኑ የተጨመረ አዲስ አገልግሎት ፊደላቱን በወርቃማው ቀለም ያሳያል።
+ * የአገልግሎቱ ሎጎ በቅደም ተከተል፦ አድሚኑ የሰቀለው ምስል → simple-icons (CC0) → የቆየው simple-icons ስሪት → በብራንድ ቀለሙ ላይ የስሙ ፊደላት።
+ * በአድሚኑ የተጨመረ አዲስ አገልግሎት ሎጎ እስኪሰቀልለት ፊደላቱን በወርቃማው ቀለም ያሳያል።
  */
 const icons: Record<string, SimpleIcon> = {
   "Surfshark VPN": siSurfshark,
@@ -71,18 +73,10 @@ const icons: Record<string, SimpleIcon> = {
 
 /** ሎጎ የሌላቸው ብራንዶች ቀለም (ፊደላቱ በዚህ ቀለም ላይ ይታያሉ)። */
 const brandColors: Record<string, string> = {
-  "LinkedIn Premium": "#0A66C2",
-  "ChatGPT Plus": "#10A37F",
   Midjourney: "#000000",
-  "Amazon Prime Video": "#1A98FF",
   "Disney+": "#113CCF",
-  "Canva Pro": "#00C4CC",
   "CapCut Pro": "#000000",
-  "Adobe Creative Cloud": "#DA1F26",
-  "Adobe Photoshop": "#31A8FF",
   "Epidemic Sound": "#000000",
-  "Microsoft 365": "#D83B01",
-  "Xbox Game Pass Ultimate": "#107C10",
 };
 
 /** ጥቁር ሎጎዎች በጨለማው ገጽታ እንዳይጠፉ በጽሑፉ ቀለም ይታያሉ። */
@@ -94,9 +88,16 @@ function isDark(hex: string) {
   return 0.299 * r + 0.587 * g + 0.114 * b < 60;
 }
 
-export function ServiceLogo({ name, className }: { name: string; className?: string }) {
-  const icon = icons[name];
-  const box = cn("flex size-12 shrink-0 items-center justify-center rounded-xl ring-1 ring-foreground/10", className);
+export function ServiceLogo({ name, logoUrl = null, className }: { name: string; logoUrl?: string | null; className?: string }) {
+  const icon = icons[name] ?? legacyLogos[name];
+  const box = cn("flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl ring-1 ring-foreground/10", className);
+  if (logoUrl) {
+    return (
+      <span aria-hidden className={cn(box, "bg-white/95 dark:bg-white/10")}>
+        <Image unoptimized src={logoUrl} alt="" width={160} height={160} className="size-3/4 object-contain" />
+      </span>
+    );
+  }
   if (icon) {
     return (
       <span aria-hidden className={cn(box, "bg-white/95 dark:bg-white/10")}>

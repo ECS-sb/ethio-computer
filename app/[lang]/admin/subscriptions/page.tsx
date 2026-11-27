@@ -8,10 +8,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime, formatPrice } from "@/lib/catalog";
 import { chapaEnabled } from "@/lib/chapa";
 import { getT, pageTitle } from "@/lib/i18n-server";
+import type { MessageKey } from "@/lib/messages";
+import { addisDayKey } from "@/lib/telegram/school-range";
 import { isMessageKey } from "@/lib/talent-catalog";
 import {
+  addCodesAction,
   addPlanAction,
   addPopularServicesAction,
+  clearCodesAction,
+  removeServiceLogoAction,
+  updateServiceSettingsAction,
+  uploadServiceLogoAction,
   createServiceAction,
   deliverSubscriptionAction,
   refundSubscriptionAction,
@@ -19,12 +26,17 @@ import {
   setServiceActiveAction,
   updatePlanAction,
 } from "@/lib/subscription-actions";
-import { planPriceEtb, subscriptionCategories, subscriptionCategory, subscriptionInfoOptions, subscriptionStatusLabels } from "@/lib/subscription-catalog";
+import { discountActive, planPricing, subscriptionCategories, subscriptionCategory, subscriptionInfoOptions, subscriptionStatusLabels } from "@/lib/subscription-catalog";
 import { getSubscriptionCatalogForAdmin, getSubscriptionQueue, getSubscriptionStats } from "@/lib/subscription-queries";
 import { getPriceSettings } from "@/lib/subscriptions";
 import { requireStaff } from "@/lib/telegram/access";
 
 export const generateMetadata = pageTitle("Subscriptions");
+
+const deliveryOptions = [
+  { value: "CODE", label: "Gift code (can be instant)" },
+  { value: "ACCOUNT", label: "On the customer's account (by hand)" },
+] as const satisfies { value: string; label: MessageKey }[];
 
 const card = "flex flex-col gap-4 rounded-xl bg-card/70 p-6 ring-1 ring-foreground/10";
 
@@ -178,9 +190,12 @@ export default async function AdminSubscriptionsPage() {
               <article key={service.id} className={card}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <ServiceLogo name={service.name} className="size-9" />
+                    <ServiceLogo name={service.name} logoUrl={service.logoUrl} className="size-9" />
                     <h3 className="font-semibold">{service.name}</h3>
                     <Badge variant="outline">{t(subscriptionCategory(service.category)?.label ?? "Others")}</Badge>
+                    <Badge variant={service.delivery === "CODE" ? "default" : "secondary"}>{service.delivery === "CODE" ? t("Gift code (can be instant)") : t("On the customer's account (by hand)")}</Badge>
+                    {discountActive(service) ? <Badge variant="destructive">{t("Discount")}</Badge> : null}
+                    {service.profitEtb !== null ? <Badge variant="outline">{t("Own profit: {amount}", { amount: formatPrice(t, service.profitEtb) })}</Badge> : null}
                     {!service.active ? <Badge variant="secondary">{t("Hidden")}</Badge> : null}
                   </div>
                   <ActionButton action={setServiceActiveAction} id={service.id} fields={{ active: service.active ? "false" : "true" }} variant="ghost" size="sm">
@@ -189,7 +204,7 @@ export default async function AdminSubscriptionsPage() {
                 </div>
                 <ul className="flex flex-col gap-2">
                   {service.plans.map((plan) => {
-                    const price = planPriceEtb(plan, settings);
+                    const pricing = planPricing(plan, settings, service);
                     return (
                       <li key={plan.id}>
                         <ActionForm action={updatePlanAction} className="flex flex-wrap items-center gap-2 text-sm">
@@ -202,7 +217,11 @@ export default async function AdminSubscriptionsPage() {
                             <input type="checkbox" name="active" value="on" defaultChecked={plan.active} className="accent-primary" />
                             {t("For sale")}
                           </label>
-                          <span className="w-28 font-semibold text-primary">{price ? formatPrice(t, price) : "—"}</span>
+                          <span className="w-32 font-semibold text-primary">
+                            {pricing ? formatPrice(t, pricing.price) : "—"}
+                            {pricing?.before ? <span className="ms-1 text-xs font-normal text-muted-foreground line-through">{formatPrice(t, pricing.before)}</span> : null}
+                          </span>
+                          {service.delivery === "CODE" ? <span className="text-xs text-muted-foreground">{t("{count} codes", { count: plan._count.codes })}</span> : null}
                           <SubmitButton variant="outline" size="sm">
                             {t("Save")}
                           </SubmitButton>
@@ -211,6 +230,84 @@ export default async function AdminSubscriptionsPage() {
                     );
                   })}
                 </ul>
+                <details className="rounded-xl bg-muted/40 p-4 text-sm">
+                  <summary className="cursor-pointer font-medium text-primary">{t("Profit, discount, logo and codes")}</summary>
+                  <div className="flex flex-col gap-6 pt-4">
+                    <ActionForm action={updateServiceSettingsAction} className="grid gap-4 sm:grid-cols-3">
+                      <input type="hidden" name="id" value={service.id} />
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor={`delivery-${service.id}`}>{t("How it's delivered")}</Label>
+                        <SelectInput id={`delivery-${service.id}`} name="delivery" options={deliveryOptions} defaultValue={service.delivery} />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor={`info-${service.id}`}>{t("What we need from the customer")}</Label>
+                        <SelectInput id={`info-${service.id}`} name="requiredInfo" options={subscriptionInfoOptions} defaultValue={service.requiredInfo} />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor={`profit-${service.id}`}>{t("Own profit per plan (birr)")}</Label>
+                        <Input id={`profit-${service.id}`} name="profitEtb" type="number" min={0} defaultValue={service.profitEtb ?? ""} placeholder={String(settings.markupEtb)} />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor={`dpct-${service.id}`}>{t("Discount (%)")}</Label>
+                        <Input id={`dpct-${service.id}`} name="discountPercent" type="number" min={0} max={90} defaultValue={service.discountPercent ?? ""} />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor={`detb-${service.id}`}>{t("Discount (birr)")}</Label>
+                        <Input id={`detb-${service.id}`} name="discountEtb" type="number" min={0} defaultValue={service.discountEtb ?? ""} />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor={`dend-${service.id}`}>{t("Discount ends (optional)")}</Label>
+                        <Input id={`dend-${service.id}`} name="discountEndsAt" type="date" defaultValue={service.discountEndsAt ? addisDayKey(service.discountEndsAt) : ""} />
+                      </div>
+                      <SubmitButton size="sm" className="w-fit">
+                        {t("Save")}
+                      </SubmitButton>
+                    </ActionForm>
+
+                    <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
+                      <ActionForm action={uploadServiceLogoAction} className="flex flex-wrap items-center gap-2">
+                        <input type="hidden" name="id" value={service.id} />
+                        <Label htmlFor={`logo-${service.id}`}>{t("Logo (PNG, JPG or WebP)")}</Label>
+                        <Input id={`logo-${service.id}`} name="logo" type="file" accept="image/png,image/jpeg,image/webp" required className="h-9 max-w-60" />
+                        <SubmitButton variant="outline" size="sm">
+                          {t("Upload")}
+                        </SubmitButton>
+                      </ActionForm>
+                      {service.logoUrl ? (
+                        <ActionButton action={removeServiceLogoAction} id={service.id} variant="ghost" size="sm">
+                          {t("Remove logo")}
+                        </ActionButton>
+                      ) : null}
+                    </div>
+
+                    {service.delivery === "CODE" ? (
+                      <div className="flex flex-col gap-4 border-t border-border pt-4">
+                        <p className="text-xs text-muted-foreground">
+                          {t("Paste gift codes you already bought, one per line. When a customer pays, one is sent to them right away. Paid orders waiting for codes get them as soon as you add some.")}
+                        </p>
+                        {service.plans.map((plan) => (
+                          <div key={plan.id} className="flex flex-col gap-2">
+                            <p className="font-medium">
+                              {isMessageKey(plan.label) ? t(plan.label) : plan.label} · <span className="text-muted-foreground">{t("{count} codes", { count: plan._count.codes })}</span>
+                            </p>
+                            <ActionForm action={addCodesAction} className="flex flex-col gap-2">
+                              <input type="hidden" name="id" value={plan.id} />
+                              <Textarea name="codes" rows={2} dir="ltr" required placeholder={t("One code or gift link per line")} aria-label={t("Gift codes")} className="font-mono" />
+                              <SubmitButton size="sm" className="w-fit">
+                                {t("Add codes")}
+                              </SubmitButton>
+                            </ActionForm>
+                            {plan._count.codes > 0 ? (
+                              <ActionButton action={clearCodesAction} id={plan.id} variant="ghost" size="sm" className="w-fit text-muted-foreground">
+                                {t("Remove unused codes")}
+                              </ActionButton>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </details>
                 <ActionForm action={addPlanAction} className="flex flex-wrap items-center gap-2 border-t border-border pt-4 text-sm">
                   <input type="hidden" name="id" value={service.id} />
                   <Input name="label" required maxLength={40} placeholder={t("New plan, e.g. 3 months")} aria-label={t("Plan name")} className="h-8 w-44" />

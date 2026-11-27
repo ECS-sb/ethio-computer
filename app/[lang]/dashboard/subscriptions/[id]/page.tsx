@@ -4,6 +4,7 @@ import { ActionButton } from "@/components/action-form";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { LocaleLink } from "@/components/i18n-provider";
 import { ChapaButtons } from "@/components/subscriptions/chapa-buttons";
+import { CopyButton } from "@/components/telegram/copy-button";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime, formatPrice } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
@@ -75,8 +76,13 @@ export default async function SubscriptionOrderPage({ params, searchParams }: { 
         {order.status === "CANCELLED" ? <p className="text-sm text-muted-foreground">{t("This order was cancelled.")}</p> : null}
         {order.deliveryNote ? (
           <div className="flex flex-col gap-1 rounded-xl bg-primary/10 p-4 ring-1 ring-primary/30">
-            <p className="text-xs font-semibold text-primary">{t("Message from Ethio Computer")}</p>
-            <p className="text-sm break-words whitespace-pre-line">{order.deliveryNote}</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-primary">{t("Message from Ethio Computer")}</p>
+              {order.status === "DELIVERED" ? <CopyButton value={order.deliveryNote} label={t("Copy")} /> : null}
+            </div>
+            <p dir="auto" className="font-mono text-sm break-words whitespace-pre-line">
+              {order.deliveryNote}
+            </p>
           </div>
         ) : null}
       </section>

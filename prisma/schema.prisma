@@ -1165,6 +1165,12 @@ enum SubscriptionInfo {
 }
 
 /// AWAITING_PAYMENT፦ በቻፓ ገና አልተከፈለም። PAID፦ ተከፍሏል፣ አድሚኑ እስኪያስገባ። DELIVERED፦ ገብቷል።
+/// CODE፦ በስጦታ ኮድ/ቫውቸር ይሰጣል (ኮድ ካለ ደንበኛው እንደከፈለ ወዲያው ያገኘዋል)። ACCOUNT፦ በደንበኛው አካውንት ላይ በእኛ ካርድ መክፈል ያስፈልጋል (በሰው)።
+enum SubscriptionDelivery {
+  CODE
+  ACCOUNT
+}
+
 enum SubscriptionOrderStatus {
   AWAITING_PAYMENT
   PAID
@@ -1174,15 +1180,24 @@ enum SubscriptionOrderStatus {
 }
 
 model SubscriptionService {
-  id           String               @id @default(cuid())
-  name         String               @unique
-  category     SubscriptionCategory
-  description  String               @default("")
-  requiredInfo SubscriptionInfo     @default(EMAIL)
-  active       Boolean              @default(true)
-  position     Int                  @default(0)
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
+  id              String               @id @default(cuid())
+  name            String               @unique
+  category        SubscriptionCategory
+  description     String               @default("")
+  requiredInfo    SubscriptionInfo     @default(EMAIL)
+  active          Boolean              @default(true)
+  position        Int                  @default(0)
+  delivery        SubscriptionDelivery @default(ACCOUNT)
+  /// የራሱ ቋሚ ትርፍ በብር (ባዶ ከሆነ የአጠቃላዩ)
+  profitEtb       Int?
+  /// ቅናሽ፦ በመቶኛ እና/ወይም በብር፤ discountEndsAt ካለፈ ቅናሹ ይቆማል
+  discountPercent Int?
+  discountEtb     Int?
+  discountEndsAt  DateTime?
+  /// አድሚኑ የሰቀለው ሎጎ (WebP)
+  logo            Bytes?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
 
   plans SubscriptionPlan[]
 
@@ -1204,6 +1219,7 @@ model SubscriptionPlan {
   updatedAt DateTime            @updatedAt
 
   orders SubscriptionOrder[]
+  codes  SubscriptionCode[]
 
   @@index([serviceId])
   @@map("subscription_plan")
@@ -1233,6 +1249,7 @@ model SubscriptionOrder {
   updatedAt    DateTime                @updatedAt
 
   walletEntries WalletEntry[]
+  code          SubscriptionCode?
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
@@ -1246,4 +1263,40 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 
   @@map("app_setting")
+}
+
+/// አድሚኑ አስቀድሞ የገዛቸው የስጦታ ኮዶች፦ ደንበኛው ሲከፍል አንዱ በራሱ ይሰጠዋል (orderId ይሞላል)።
+model SubscriptionCode {
+  id        String             @id @default(cuid())
+  planId    String
+  plan      SubscriptionPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  code      String
+  orderId   String?            @unique
+  order     SubscriptionOrder? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  usedAt    DateTime?
+  createdAt DateTime           @default(now())
+
+  @@index([planId, orderId])
+  @@map("subscription_code")
+}
+
+/// በዋናው ገጽ ላይ የሚታይ ባነር (ቅናሽ፣ ዜና)፦ በእንግሊዝኛና በአማርኛ፣ ሊንክ እና የሚኮፒ ኮድ።
+model Banner {
+  id          String    @id @default(cuid())
+  titleEn     String
+  titleAm     String
+  textEn      String    @default("")
+  textAm      String    @default("")
+  linkUrl     String?
+  linkLabelEn String    @default("")
+  linkLabelAm String    @default("")
+  code        String?
+  active      Boolean   @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([active, startsAt])
+  @@map("banner")
 }

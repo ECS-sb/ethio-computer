@@ -48,15 +48,45 @@ export const SETTING_MARKUP_ETB = "subscriptions.markupEtb";
 /** markupEtb፦ በእያንዳንዱ እቅድ ላይ የሚጨመር ቋሚ ትርፍ በብር። */
 export type PriceSettings = { usdRate: number; markupPercent: number; markupEtb: number };
 
+/** የአንድ አገልግሎት የራሱ ትርፍና ቅናሽ (ባዶ ከሆኑ የአጠቃላዩ ትርፍ ይሰራል፣ ቅናሽ የለም)። */
+export type ServicePricing = { profitEtb: number | null; discountPercent: number | null; discountEtb: number | null; discountEndsAt: Date | null };
+
+export const NO_SERVICE_PRICING: ServicePricing = { profitEtb: null, discountPercent: null, discountEtb: null, discountEndsAt: null };
+
+export function discountActive(service: ServicePricing, now = new Date()): boolean {
+  const has = (service.discountPercent ?? 0) > 0 || (service.discountEtb ?? 0) > 0;
+  return has && (!service.discountEndsAt || service.discountEndsAt > now);
+}
+
+const roundUp = (value: number) => Math.ceil(value / 10) * 10;
+
 /**
- * የእቅዱ ዋጋ በብር፦ አድሚኑ ቋሚ ዋጋ ካስቀመጠ እሱ፣ ካልሆነ ዶላር × ተመን × (1 + ትርፍ%) + ቋሚ ትርፍ፣ ወደ ላይ በ10 ብር ተጠግቶ።
+ * የእቅዱ ዋጋ በብር፦ አድሚኑ ቋሚ ዋጋ ካስቀመጠ እሱ፣ ካልሆነ ዶላር × ተመን × (1 + ትርፍ%) + ቋሚ ትርፍ (የአገልግሎቱ የራሱ ካለ እሱ)።
+ * ቅናሽ ካለ price የቀነሰው ዋጋ፣ before ደግሞ ከቅናሹ በፊት የነበረው ነው። ሁሉም ወደ ላይ በ10 ብር ይጠጋጋል።
  * ተመኑ ገና ካልተቀመጠ null ይመልሳል (እቅዱ አይሸጥም)።
  */
+export function planPricing(
+  plan: { usdCents: number; priceEtb: number | null },
+  settings: PriceSettings,
+  service: ServicePricing = NO_SERVICE_PRICING,
+  now = new Date()
+): { price: number; before: number | null } | null {
+  let base: number;
+  if (plan.priceEtb && plan.priceEtb > 0) {
+    base = plan.priceEtb;
+  } else {
+    if (settings.usdRate <= 0 || plan.usdCents <= 0) return null;
+    const profit = service.profitEtb ?? settings.markupEtb;
+    base = roundUp((plan.usdCents / 100) * settings.usdRate * (1 + settings.markupPercent / 100) + profit);
+  }
+  if (!discountActive(service, now)) return { price: base, before: null };
+  const discounted = roundUp(base * (1 - (service.discountPercent ?? 0) / 100) - (service.discountEtb ?? 0));
+  return { price: Math.max(10, discounted), before: base };
+}
+
+/** ቅናሽ የሌለበት ዋጋ ብቻ (ለአሮጌ ጥሪዎች)። */
 export function planPriceEtb(plan: { usdCents: number; priceEtb: number | null }, settings: PriceSettings): number | null {
-  if (plan.priceEtb && plan.priceEtb > 0) return plan.priceEtb;
-  if (settings.usdRate <= 0 || plan.usdCents <= 0) return null;
-  const raw = (plan.usdCents / 100) * settings.usdRate * (1 + settings.markupPercent / 100) + settings.markupEtb;
-  return Math.ceil(raw / 10) * 10;
+  return planPricing(plan, settings)?.price ?? null;
 }
 
 /** የአገልግሎቱ ስም የመጀመሪያ ፊደላት (ለትንሹ ምልክት)። */

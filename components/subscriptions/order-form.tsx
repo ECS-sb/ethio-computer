@@ -16,7 +16,7 @@ import { orderSubscriptionAction } from "@/lib/subscription-actions";
 import { infoFields } from "@/lib/subscription-catalog";
 import { cn } from "@/lib/utils";
 
-type Plan = { id: string; label: string; price: number };
+type Plan = { id: string; label: string; price: number; before: number | null; instant: boolean };
 
 /** እቅድ መምረጫ፣ የአካውንቱ መረጃ እና ሁለቱ የክፍያ መንገዶች (ዋሌት ወይም ቻፓ)። */
 export function SubscriptionOrderForm({
@@ -77,8 +77,12 @@ export function SubscriptionOrderForm({
             <span className="flex items-center gap-2">
               <input type="radio" name="planId" value={option.id} checked={option.id === planId} onChange={() => setPlanId(option.id)} className="accent-primary" />
               <span className="font-medium">{option.label}</span>
+              {option.instant ? <span className="rounded-full bg-primary/15 px-2 text-xs text-primary">{t("Instant")}</span> : null}
             </span>
-            <span className="font-heading font-bold text-primary">{formatPrice(t, option.price)}</span>
+            <span className="text-right">
+              {option.before ? <span className="block text-xs text-muted-foreground line-through">{formatPrice(t, option.before)}</span> : null}
+              <span className="font-heading font-bold text-primary">{formatPrice(t, option.price)}</span>
+            </span>
           </label>
         ))}
       </fieldset>

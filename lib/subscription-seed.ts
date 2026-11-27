@@ -1,6 +1,6 @@
 // በኢትዮጵያ ብዙ ሰው የሚከፍላቸው ሰብስክሪፕሽኖች፦ አድሚኑ "ታዋቂዎቹን አስገባ" ሲጫን ይገባሉ (ያሉት አይደገሙም)።
 // ዋጋዎቹ የአሜሪካ ዶላር መነሻ ዋጋዎች ናቸው፤ በየጊዜው ስለሚቀየሩ አድሚኑ አይቶ ማስተካከል አለበት።
-import type { SubscriptionCategory, SubscriptionInfo } from "@/lib/generated/prisma/enums";
+import type { SubscriptionCategory, SubscriptionDelivery, SubscriptionInfo } from "@/lib/generated/prisma/enums";
 import type { MessageKey } from "@/lib/messages";
 
 export type SeedService = {
@@ -8,8 +8,12 @@ export type SeedService = {
   category: SubscriptionCategory;
   description: MessageKey;
   requiredInfo: SubscriptionInfo;
+  delivery?: SubscriptionDelivery;
   plans: { label: MessageKey; usd: number }[];
 };
+
+/** በስጦታ ኮድ/ቫውቸር የሚሸጡት (ኮድ ሲኖር ወዲያው ይሰጣሉ)። */
+export const giftCodeServices = new Set(["Telegram Premium", "Discord Nitro", "Netflix", "Spotify Premium", "Apple Music", "iCloud+", "PlayStation Plus", "Xbox Game Pass Ultimate", "Surfshark VPN", "NordVPN", "Google One"]);
 
 const month: MessageKey = "1 month";
 const year: MessageKey = "1 year";

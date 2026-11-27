@@ -198,3 +198,79 @@ export async function setServiceActiveAction(data: FormData): Promise<ActionResu
   const active = parsed.data.active === "true";
   return run(active ? "Service shown." : "Service hidden.", () => subscriptions.setServiceActive(admin, parsed.data.id, active));
 }
+
+const optionalInt = (max: number) => z.preprocess((value) => (value === "" || value === undefined ? null : value), z.coerce.number().int().min(0).max(max).nullable());
+
+/** የአንድ አገልግሎት ቅንብር፦ የሚሰጥበት መንገድ፣ የሚጠየቀው መረጃ፣ የራሱ ትርፍ እና ቅናሽ (እስከ ቀን)። */
+export async function updateServiceSettingsAction(data: FormData): Promise<ActionResult> {
+  const admin = await owner();
+  if (!admin) return NO_PERMISSION;
+  const parsed = z
+    .object({
+      id,
+      delivery: z.enum(["CODE", "ACCOUNT"]),
+      requiredInfo: oneOf(subscriptionInfoOptions),
+      profitEtb: optionalInt(1_000_000),
+      discountPercent: optionalInt(90),
+      discountEtb: optionalInt(1_000_000),
+      discountEndsAt: z.preprocess((value) => (value === "" || value === undefined ? null : value), z.coerce.date().nullable()),
+    })
+    .safeParse(Object.fromEntries(data));
+  if (!parsed.success) return INVALID;
+  const { id: serviceId, requiredInfo, discountEndsAt, ...rest } = parsed.data;
+  return run("Saved.", () =>
+    subscriptions.updateServiceSettings(admin, serviceId, {
+      ...rest,
+      requiredInfo: requiredInfo as subscriptions.ServiceSettings["requiredInfo"],
+      // ቀኑ የሚያልቀው በዚያ ቀን መጨረሻ (በአዲስ አበባ ሰዓት) ነው።
+      discountEndsAt: discountEndsAt ? new Date(discountEndsAt.getTime() + (24 - 3) * 60 * 60 * 1000 - 1) : null,
+    })
+  );
+}
+
+const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
+/** ሎጎ፦ PNG/JPG/WebP እስከ 1MB፤ ወደ 160px WebP ይቀየራል (SVG ደህንነት ስለሌለው አይቀበልም)። */
+export async function uploadServiceLogoAction(data: FormData): Promise<ActionResult> {
+  const admin = await owner();
+  if (!admin) return NO_PERMISSION;
+  const serviceId = id.safeParse(field(data, "id"));
+  const file = data.get("logo");
+  if (!serviceId.success || !(file instanceof File) || file.size === 0) return INVALID;
+  if (!LOGO_TYPES.includes(file.type) || file.size > 1_000_000) return { ok: false, message: "Use a PNG, JPG or WebP image up to 1MB." };
+  return run("Logo saved.", async () => {
+    const sharp = (await import("sharp")).default;
+    const webp = await sharp(Buffer.from(await file.arrayBuffer()), { limitInputPixels: 16_000_000 })
+      .resize(160, 160, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .webp({ quality: 90 })
+      .toBuffer();
+    await subscriptions.setServiceLogo(admin, serviceId.data, new Uint8Array(webp));
+  });
+}
+
+export async function removeServiceLogoAction(data: FormData): Promise<ActionResult> {
+  const admin = await owner();
+  if (!admin) return NO_PERMISSION;
+  const parsed = id.safeParse(field(data, "id"));
+  if (!parsed.success) return INVALID;
+  return run("Logo removed.", () => subscriptions.setServiceLogo(admin, parsed.data, null));
+}
+
+export async function addCodesAction(data: FormData): Promise<ActionResult> {
+  const admin = await owner();
+  if (!admin) return NO_PERMISSION;
+  const parsed = z.object({ id, codes: z.string().max(100_000) }).safeParse({ id: field(data, "id"), codes: field(data, "codes") });
+  if (!parsed.success) return INVALID;
+  const codes = parsed.data.codes.split(/\r?\n/);
+  return run("Codes added. Paid orders waiting for this plan got theirs.", async () => {
+    await subscriptions.addCodes(admin, parsed.data.id, codes);
+  });
+}
+
+export async function clearCodesAction(data: FormData): Promise<ActionResult> {
+  const admin = await owner();
+  if (!admin) return NO_PERMISSION;
+  const parsed = id.safeParse(field(data, "id"));
+  if (!parsed.success) return INVALID;
+  return run("Unused codes removed.", () => subscriptions.clearUnusedCodes(admin, parsed.data));
+}

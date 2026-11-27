@@ -1,10 +1,11 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { ShieldCheckIcon } from "lucide-react";
+import { ShieldCheckIcon, ZapIcon } from "lucide-react";
 import { PageIntro } from "@/components/brand";
 import { LocaleLink } from "@/components/i18n-provider";
 import { ServiceLogo } from "@/components/subscriptions/service-logo";
 import { PageActions } from "@/components/page-actions";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPrice } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
@@ -45,7 +46,7 @@ async function Store() {
           </div>
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {category.services.map((service) => {
-              const cheapest = Math.min(...service.plans.map((plan) => plan.price));
+              const cheapest = service.plans.reduce((best, plan) => (plan.price < best.price ? plan : best), service.plans[0]);
               return (
                 <LocaleLink
                   key={service.id}
@@ -53,8 +54,19 @@ async function Store() {
                   className="flex flex-col gap-4 rounded-xl bg-card/70 p-6 ring-1 ring-foreground/10 transition-all hover:-translate-y-1 hover:ring-primary/60"
                 >
                   <div className="flex items-center gap-4">
-                    <ServiceLogo name={service.name} />
-                    <h3 className="font-semibold text-balance">{service.name}</h3>
+                    <ServiceLogo name={service.name} logoUrl={service.logoUrl} />
+                    <div className="flex min-w-0 flex-col gap-1">
+                      <h3 className="font-semibold text-balance">{service.name}</h3>
+                      <span className="flex flex-wrap gap-1">
+                        {service.onSale ? <Badge variant="destructive">{t("Discount")}</Badge> : null}
+                        {service.instant ? (
+                          <Badge>
+                            <ZapIcon data-icon="inline-start" />
+                            {t("Instant")}
+                          </Badge>
+                        ) : null}
+                      </span>
+                    </div>
                   </div>
                   <p className="line-clamp-2 flex-1 text-sm text-muted-foreground">
                     {isMessageKey(service.description) ? t(service.description) : service.description}
@@ -63,7 +75,8 @@ async function Store() {
                     <span className="text-xs text-muted-foreground">{t("{count} plans", { count: service.plans.length })}</span>
                     <span className="text-right">
                       <span className="block text-xs text-muted-foreground">{t("Starting at")}</span>
-                      <span className="font-heading text-xl font-bold text-primary">{formatPrice(t, cheapest)}</span>
+                      {cheapest.before ? <span className="block text-xs text-muted-foreground line-through">{formatPrice(t, cheapest.before)}</span> : null}
+                      <span className="font-heading text-xl font-bold text-primary">{formatPrice(t, cheapest.price)}</span>
                     </span>
                   </div>
                 </LocaleLink>
