@@ -43,17 +43,19 @@ export const subscriptionStatusLabels: Record<SubscriptionOrderStatus, MessageKe
 
 export const SETTING_USD_RATE = "subscriptions.usdRate";
 export const SETTING_MARKUP = "subscriptions.markupPercent";
+export const SETTING_MARKUP_ETB = "subscriptions.markupEtb";
 
-export type PriceSettings = { usdRate: number; markupPercent: number };
+/** markupEtb፦ በእያንዳንዱ እቅድ ላይ የሚጨመር ቋሚ ትርፍ በብር። */
+export type PriceSettings = { usdRate: number; markupPercent: number; markupEtb: number };
 
 /**
- * የእቅዱ ዋጋ በብር፦ አድሚኑ ቋሚ ዋጋ ካስቀመጠ እሱ፣ ካልሆነ ዶላር × ተመን × (1 + ትርፍ)፣ ወደ ላይ በ10 ብር ተጠግቶ።
+ * የእቅዱ ዋጋ በብር፦ አድሚኑ ቋሚ ዋጋ ካስቀመጠ እሱ፣ ካልሆነ ዶላር × ተመን × (1 + ትርፍ%) + ቋሚ ትርፍ፣ ወደ ላይ በ10 ብር ተጠግቶ።
  * ተመኑ ገና ካልተቀመጠ null ይመልሳል (እቅዱ አይሸጥም)።
  */
 export function planPriceEtb(plan: { usdCents: number; priceEtb: number | null }, settings: PriceSettings): number | null {
   if (plan.priceEtb && plan.priceEtb > 0) return plan.priceEtb;
   if (settings.usdRate <= 0 || plan.usdCents <= 0) return null;
-  const raw = (plan.usdCents / 100) * settings.usdRate * (1 + settings.markupPercent / 100);
+  const raw = (plan.usdCents / 100) * settings.usdRate * (1 + settings.markupPercent / 100) + settings.markupEtb;
   return Math.ceil(raw / 10) * 10;
 }
 

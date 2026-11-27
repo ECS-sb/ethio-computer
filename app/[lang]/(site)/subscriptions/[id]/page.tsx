@@ -2,8 +2,8 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { ArrowLeftIcon, ShieldCheckIcon } from "lucide-react";
-import { PlatformMark } from "@/components/brand";
 import { LocaleLink } from "@/components/i18n-provider";
+import { ServiceLogo } from "@/components/subscriptions/service-logo";
 import { SubscriptionOrderForm } from "@/components/subscriptions/order-form";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +11,7 @@ import { chapaEnabled } from "@/lib/chapa";
 import { getT, pageTitle } from "@/lib/i18n-server";
 import { getWalletBalance } from "@/lib/queries";
 import { getCurrentUser } from "@/lib/session";
-import { serviceMark, subscriptionCategory } from "@/lib/subscription-catalog";
+import { subscriptionCategory } from "@/lib/subscription-catalog";
 import { getStoreService } from "@/lib/subscription-queries";
 import { isMessageKey } from "@/lib/talent-catalog";
 
@@ -32,7 +32,7 @@ async function ServiceContent({ params }: Props) {
     <div className="grid items-start gap-6 lg:grid-cols-[1fr_26rem]">
       <div className="flex min-w-0 flex-col gap-6">
         <header className="flex items-center gap-4">
-          <PlatformMark mark={serviceMark(service.name)} className="size-16 text-base" />
+          <ServiceLogo name={service.name} className="size-16" />
           <div className="flex flex-col gap-2">
             {category ? <Badge variant="outline">{t(category.label)}</Badge> : null}
             <h1 className="text-3xl font-semibold text-balance">{service.name}</h1>

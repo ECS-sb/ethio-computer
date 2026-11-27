@@ -1926,6 +1926,9 @@ export const am = {
   "Pay from your wallet or with Chapa.": "ከዋሌትዎ ወይም በቻፓ ይክፈሉ።",
   "We buy it with our card and activate it, usually within a few hours.": "በእኛ ካርድ ገዝተን እናስገባለን፤ ብዙ ጊዜ በጥቂት ሰዓታት ውስጥ።",
   "You see the confirmation on My subscriptions.": "ማረጋገጫውን በ\"የእኔ ሰብስክሪፕሽኖች\" ያያሉ።",
+  "Profit per plan (birr)": "በእያንዳንዱ እቅድ ትርፍ (ብር)",
+  "Plans are priced in dollars. The price in birr = dollars × your rate × (1 + profit %) + profit in birr. A plan with its own birr price ignores this. Nothing is sold until the rate is set.":
+    "እቅዶች በዶላር ይተመናሉ። ዋጋው በብር = ዶላር × የእርስዎ ተመን × (1 + ትርፍ%) + ትርፍ በብር። የራሱ የብር ዋጋ ያለው እቅድ ይህን አይከተልም። ተመኑ እስኪቀመጥ ምንም አይሸጥም።",
 } as const;
 
 export type MessageKey = keyof typeof am;

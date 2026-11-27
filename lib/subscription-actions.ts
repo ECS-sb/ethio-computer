@@ -124,8 +124,8 @@ export async function savePriceSettingsAction(data: FormData): Promise<ActionRes
   const admin = await owner();
   if (!admin) return NO_PERMISSION;
   const parsed = z
-    .object({ usdRate: z.coerce.number().min(1).max(10_000), markupPercent: z.coerce.number().min(0).max(500) })
-    .safeParse({ usdRate: field(data, "usdRate"), markupPercent: field(data, "markupPercent") });
+    .object({ usdRate: z.coerce.number().min(1).max(10_000), markupPercent: z.coerce.number().min(0).max(500), markupEtb: z.coerce.number().int().min(0).max(1_000_000) })
+    .safeParse({ usdRate: field(data, "usdRate"), markupPercent: field(data, "markupPercent"), markupEtb: field(data, "markupEtb") });
   if (!parsed.success) return INVALID;
   return run("Prices updated.", () => subscriptions.savePriceSettings(admin, parsed.data));
 }

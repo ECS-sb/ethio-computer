@@ -5,7 +5,7 @@ import type { SubscriptionCategory, SubscriptionInfo } from "@/lib/generated/pri
 import { createT } from "@/lib/i18n";
 import type { Actor } from "@/lib/marketplace";
 import { DomainError } from "@/lib/marketplace-errors";
-import { planPriceEtb, SETTING_MARKUP, SETTING_USD_RATE, type PriceSettings } from "@/lib/subscription-catalog";
+import { planPriceEtb, SETTING_MARKUP, SETTING_MARKUP_ETB, SETTING_USD_RATE, type PriceSettings } from "@/lib/subscription-catalog";
 import { popularSubscriptions } from "@/lib/subscription-seed";
 import { escapeHtml, notifyOwners } from "@/lib/telegram/api";
 import { credit, debit } from "@/lib/wallet";
@@ -25,17 +25,19 @@ function assertAdmin(actor: Actor) {
 // ---- ቅንብሮች
 
 export async function getPriceSettings(): Promise<PriceSettings> {
-  const rows = await db.appSetting.findMany({ where: { key: { in: [SETTING_USD_RATE, SETTING_MARKUP] } } });
+  const rows = await db.appSetting.findMany({ where: { key: { in: [SETTING_USD_RATE, SETTING_MARKUP, SETTING_MARKUP_ETB] } } });
   const value = (key: string) => Number(rows.find((row) => row.key === key)?.value ?? 0) || 0;
-  return { usdRate: value(SETTING_USD_RATE), markupPercent: value(SETTING_MARKUP) };
+  return { usdRate: value(SETTING_USD_RATE), markupPercent: value(SETTING_MARKUP), markupEtb: value(SETTING_MARKUP_ETB) };
 }
 
 export async function savePriceSettings(actor: Actor, settings: PriceSettings) {
   assertAdmin(actor);
-  await db.$transaction([
-    db.appSetting.upsert({ where: { key: SETTING_USD_RATE }, create: { key: SETTING_USD_RATE, value: String(settings.usdRate) }, update: { value: String(settings.usdRate) } }),
-    db.appSetting.upsert({ where: { key: SETTING_MARKUP }, create: { key: SETTING_MARKUP, value: String(settings.markupPercent) }, update: { value: String(settings.markupPercent) } }),
-  ]);
+  const entries: [string, number][] = [
+    [SETTING_USD_RATE, settings.usdRate],
+    [SETTING_MARKUP, settings.markupPercent],
+    [SETTING_MARKUP_ETB, settings.markupEtb],
+  ];
+  await db.$transaction(entries.map(([key, value]) => db.appSetting.upsert({ where: { key }, create: { key, value: String(value) }, update: { value: String(value) } })));
 }
 
 // ---- ካታሎግ (አድሚን)

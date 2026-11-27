@@ -1,13 +1,13 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { ShieldCheckIcon } from "lucide-react";
-import { PageIntro, PlatformMark } from "@/components/brand";
+import { PageIntro } from "@/components/brand";
 import { LocaleLink } from "@/components/i18n-provider";
+import { ServiceLogo } from "@/components/subscriptions/service-logo";
 import { PageActions } from "@/components/page-actions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPrice } from "@/lib/catalog";
 import { getT, pageTitle } from "@/lib/i18n-server";
-import { serviceMark } from "@/lib/subscription-catalog";
 import { getSubscriptionStore } from "@/lib/subscription-queries";
 import { isMessageKey } from "@/lib/talent-catalog";
 
@@ -53,7 +53,7 @@ async function Store() {
                   className="flex flex-col gap-4 rounded-xl bg-card/70 p-6 ring-1 ring-foreground/10 transition-all hover:-translate-y-1 hover:ring-primary/60"
                 >
                   <div className="flex items-center gap-4">
-                    <PlatformMark mark={serviceMark(service.name)} className="size-12" />
+                    <ServiceLogo name={service.name} />
                     <h3 className="font-semibold text-balance">{service.name}</h3>
                   </div>
                   <p className="line-clamp-2 flex-1 text-sm text-muted-foreground">

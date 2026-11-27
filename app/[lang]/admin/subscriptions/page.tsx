@@ -1,5 +1,6 @@
 import { ActionButton, ActionForm, SubmitButton } from "@/components/action-form";
 import { SelectInput } from "@/components/select-input";
+import { ServiceLogo } from "@/components/subscriptions/service-logo";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -145,7 +146,7 @@ export default async function AdminSubscriptionsPage() {
             <div className="flex flex-col gap-1">
               <h2 className="text-xl font-semibold">{t("Prices")}</h2>
               <p className="text-sm text-muted-foreground">
-                {t("Plans are priced in dollars. The price in birr = dollars × your rate × (1 + profit). A plan with its own birr price ignores this. Nothing is sold until the rate is set.")}
+                {t("Plans are priced in dollars. The price in birr = dollars × your rate × (1 + profit %) + profit in birr. A plan with its own birr price ignores this. Nothing is sold until the rate is set.")}
               </p>
             </div>
             <ActionForm action={savePriceSettingsAction} className="flex flex-wrap items-end gap-4">
@@ -156,6 +157,10 @@ export default async function AdminSubscriptionsPage() {
               <div className="flex flex-col gap-2">
                 <Label htmlFor="markup">{t("Profit (%)")}</Label>
                 <Input id="markup" name="markupPercent" type="number" step="0.1" min={0} required defaultValue={settings.markupPercent} className="w-32" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="markup-etb">{t("Profit per plan (birr)")}</Label>
+                <Input id="markup-etb" name="markupEtb" type="number" step="1" min={0} required defaultValue={settings.markupEtb} className="w-36" />
               </div>
               <SubmitButton>{t("Save")}</SubmitButton>
             </ActionForm>
@@ -173,6 +178,7 @@ export default async function AdminSubscriptionsPage() {
               <article key={service.id} className={card}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
+                    <ServiceLogo name={service.name} className="size-9" />
                     <h3 className="font-semibold">{service.name}</h3>
                     <Badge variant="outline">{t(subscriptionCategory(service.category)?.label ?? "Others")}</Badge>
                     {!service.active ? <Badge variant="secondary">{t("Hidden")}</Badge> : null}
