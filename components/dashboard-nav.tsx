@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import {
   BadgeCheckIcon,
   BriefcaseIcon,
+  CreditCardIcon,
   HandCoinsIcon,
   ListIcon,
   MessageCircleIcon,
@@ -60,6 +61,7 @@ const groups: Record<"user", Group[]> = {
       title: "Account",
       items: [
         { href: "/dashboard/wallet", label: "Wallet", icon: WalletIcon },
+        { href: "/dashboard/subscriptions", label: "My subscriptions", icon: CreditCardIcon },
         { href: "/dashboard/verification", label: "Seller verification", icon: BadgeCheckIcon },
         { href: "/dashboard/messages", label: "Messages", icon: MessageCircleIcon },
         { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
@@ -79,7 +81,7 @@ export function DashboardNav({ area }: { area: keyof typeof groups }) {
         <div key={group.title} className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-stretch">
           <p className="hidden px-4 pt-2 text-xs font-semibold text-muted-foreground lg:block">{t(group.title)}</p>
           {group.items.map((item) => {
-            const hasSubpages = ["/dashboard/messages", "/dashboard/jobs", "/dashboard/talent", "/dashboard/electronics", "/dashboard/electronics/deals"].includes(item.href);
+            const hasSubpages = ["/dashboard/messages", "/dashboard/jobs", "/dashboard/talent", "/dashboard/electronics", "/dashboard/electronics/deals", "/dashboard/subscriptions"].includes(item.href);
             // ንዑስ ገጹ የራሱ ሊንክ ካለው (ለምሳሌ /dashboard/buyer/orders) የወላጁ ሊንክ አይበራም።
             const ownedByChild = group.items.some(
               (other) => other.href.startsWith(`${item.href}/`) && (pathname === other.href || pathname.startsWith(`${other.href}/`))

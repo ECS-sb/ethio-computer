@@ -61,6 +61,7 @@ export function staffPages(can: Permissions): string[] {
     ...(can.users ? ["/admin/users"] : []),
     ...(can.reports ? ["/admin/reports"] : []),
     ...(can.listings || can.ordersDecide ? ["/admin/talent", "/admin/electronics"] : []),
+    ...(can.ordersDecide ? ["/admin/subscriptions"] : []),
     ...(can.chats && can.salesAccount ? ["/admin/telegram"] : []),
     ...(can.chats && can.schoolAccount ? [SCHOOL_INBOX] : []),
     ...(can.chats && can.sales ? ["/admin/telegram/sales"] : []),

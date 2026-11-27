@@ -52,6 +52,8 @@ enum WalletEntryType {
   PRODUCT_PAYMENT
   PRODUCT_REFUND
   PRODUCT_EARNING
+  SUBSCRIPTION_PAYMENT
+  SUBSCRIPTION_REFUND
 }
 
 enum OfferStatus {
@@ -111,6 +113,7 @@ model User {
   productMessages    ProductMessage[]
   productsBought     ProductOrder[]      @relation("ProductOrderBuyer")
   productsSold       ProductOrder[]      @relation("ProductOrderSeller")
+  subscriptionOrders SubscriptionOrder[]
 
   @@map("user")
 }
@@ -382,23 +385,25 @@ model Withdrawal {
 
 /// የዋሌቱ እያንዳንዱ እንቅስቃሴ (ገቢ +፣ ወጪ −) እና ከዚያ በኋላ የቀረው ሂሳብ።
 model WalletEntry {
-  id             String          @id @default(cuid())
-  userId         String
-  user           User            @relation(fields: [userId], references: [id], onDelete: Restrict)
-  type           WalletEntryType
-  amountEtb      Int
-  balanceAfter   Int
-  orderId        String?
-  order          Order?          @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  depositId      String?
-  deposit        Deposit?        @relation(fields: [depositId], references: [id], onDelete: Restrict)
-  withdrawalId   String?
-  withdrawal     Withdrawal?     @relation(fields: [withdrawalId], references: [id], onDelete: Restrict)
-  jobId          String?
-  job            Job?            @relation(fields: [jobId], references: [id], onDelete: Restrict)
-  productOrderId String?
-  productOrder   ProductOrder?   @relation(fields: [productOrderId], references: [id], onDelete: Restrict)
-  createdAt      DateTime        @default(now())
+  id                  String             @id @default(cuid())
+  userId              String
+  user                User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  type                WalletEntryType
+  amountEtb           Int
+  balanceAfter        Int
+  orderId             String?
+  order               Order?             @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  depositId           String?
+  deposit             Deposit?           @relation(fields: [depositId], references: [id], onDelete: Restrict)
+  withdrawalId        String?
+  withdrawal          Withdrawal?        @relation(fields: [withdrawalId], references: [id], onDelete: Restrict)
+  jobId               String?
+  job                 Job?               @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  productOrderId      String?
+  productOrder        ProductOrder?      @relation(fields: [productOrderId], references: [id], onDelete: Restrict)
+  subscriptionOrderId String?
+  subscriptionOrder   SubscriptionOrder? @relation(fields: [subscriptionOrderId], references: [id], onDelete: Restrict)
+  createdAt           DateTime           @default(now())
 
   @@index([userId, createdAt])
   @@map("wallet_entry")
@@ -1135,4 +1140,110 @@ model ProductOrder {
   @@index([status])
   @@index([threadId])
   @@map("product_order")
+}
+
+// ---- ሰብስክሪፕሽኖች፦ ደንበኛው ይከፍላል (ከዋሌት ወይም በቻፓ)፣ ድርጅቱ በራሱ ካርድ ገዝቶ ያስገባለታል
+
+enum SubscriptionCategory {
+  VPN
+  SOCIAL
+  AI
+  STREAMING
+  CREATIVE
+  PRODUCTIVITY
+  GAMING
+  DEVELOPER
+  OTHER
+}
+
+/// ለማስገባት ከደንበኛው የሚያስፈልገው መረጃ።
+enum SubscriptionInfo {
+  EMAIL
+  USERNAME
+  PHONE
+  NONE
+}
+
+/// AWAITING_PAYMENT፦ በቻፓ ገና አልተከፈለም። PAID፦ ተከፍሏል፣ አድሚኑ እስኪያስገባ። DELIVERED፦ ገብቷል።
+enum SubscriptionOrderStatus {
+  AWAITING_PAYMENT
+  PAID
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+model SubscriptionService {
+  id           String               @id @default(cuid())
+  name         String               @unique
+  category     SubscriptionCategory
+  description  String               @default("")
+  requiredInfo SubscriptionInfo     @default(EMAIL)
+  active       Boolean              @default(true)
+  position     Int                  @default(0)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  plans SubscriptionPlan[]
+
+  @@index([active, category])
+  @@map("subscription_service")
+}
+
+/// ዋጋው በዶላር ይቀመጣል፤ በብር የሚሰላው አድሚኑ ባስቀመጠው የምንዛሪ ተመንና ትርፍ ነው (priceEtb ካለ እሱ ይበልጣል)።
+model SubscriptionPlan {
+  id        String              @id @default(cuid())
+  serviceId String
+  service   SubscriptionService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  label     String
+  usdCents  Int
+  priceEtb  Int?
+  active    Boolean             @default(true)
+  position  Int                 @default(0)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  orders SubscriptionOrder[]
+
+  @@index([serviceId])
+  @@map("subscription_plan")
+}
+
+model SubscriptionOrder {
+  id           String                  @id @default(cuid())
+  userId       String
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  planId       String
+  plan         SubscriptionPlan        @relation(fields: [planId], references: [id], onDelete: Restrict)
+  /// በትዕዛዙ ጊዜ የነበሩት ስምና ዋጋ (ካታሎጉ ቢቀየርም ትዕዛዙ አይቀየርም)
+  serviceName  String
+  planLabel    String
+  amountEtb    Int
+  accountInfo  String                  @default("")
+  note         String                  @default("")
+  status       SubscriptionOrderStatus @default(AWAITING_PAYMENT)
+  /// WALLET ወይም CHAPA
+  payMethod    String
+  chapaRef     String?                 @unique
+  /// አድሚኑ ሲያስገባ ለደንበኛው የሚጽፈው (ኮድ፣ የመግቢያ መረጃ ወይም "በአካውንትዎ ገብቷል")፤ ደንበኛውና አድሚኑ ብቻ ያዩታል
+  deliveryNote String?
+  paidAt       DateTime?
+  deliveredAt  DateTime?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  walletEntries WalletEntry[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@map("subscription_order")
+}
+
+/// የድረ-ገጹ ቅንብሮች (ለምሳሌ የሰብስክሪፕሽን የዶላር ምንዛሪ ተመን)።
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("app_setting")
 }

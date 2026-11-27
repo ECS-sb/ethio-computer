@@ -8,7 +8,7 @@ import { DomainError } from "@/lib/marketplace-errors";
  */
 
 type Tx = Prisma.TransactionClient;
-type Refs = { orderId?: string; depositId?: string; withdrawalId?: string; jobId?: string; productOrderId?: string };
+type Refs = { orderId?: string; depositId?: string; withdrawalId?: string; jobId?: string; productOrderId?: string; subscriptionOrderId?: string };
 
 export { FEE_PERCENT, feeFor } from "@/lib/fees";
 

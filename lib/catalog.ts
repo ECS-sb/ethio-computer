@@ -332,4 +332,6 @@ export const walletEntryLabels: Record<WalletEntryType, MessageKey> = {
   PRODUCT_PAYMENT: "Bought an item",
   PRODUCT_REFUND: "Item refund",
   PRODUCT_EARNING: "Item sale (after fee)",
+  SUBSCRIPTION_PAYMENT: "Paid for a subscription",
+  SUBSCRIPTION_REFUND: "Subscription refund",
 };

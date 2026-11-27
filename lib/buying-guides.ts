@@ -97,6 +97,21 @@ export const guides = {
       action: { label: "Offer your skills", href: "/dashboard/talent/new" },
     },
   },
+  subscriptions: {
+    title: "How to pay for a subscription",
+    buy: {
+      tab: "How to buy",
+      steps: [
+        { title: "Sign in", description: "Sign in with your Google account. It takes a few seconds." },
+        { title: "Choose the subscription", description: "Pick the category, then the service and the plan you want, like 1 month or 1 year." },
+        { title: "Enter your account", description: "Write the email or username of the account to activate. Never send us your password." },
+        { title: "Pay", description: "Pay from your wallet, or with Chapa using Telebirr, CBE Birr or your bank." },
+        { title: "We activate it", description: "We buy it with our card and activate it on your account, usually within a few hours." },
+        { title: "Check My subscriptions", description: "When it's active you see a message there. If we can't activate it, the money returns to your wallet." },
+      ],
+      action: { label: "Choose a subscription", href: "#store" },
+    },
+  },
   services: {
     title: "How to order a service",
     buy: {
